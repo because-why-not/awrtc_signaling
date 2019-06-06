@@ -1,0 +1,39 @@
+{
+  "name": "awrtc_signaling",
+  "version": "0.984.0",
+  "description": "Default ws based signaling server for awrtc_browser and the unity asset WebRtcVideoChat",
+  "main": "out/server.js",
+  "scripts": {
+    "tsc": "tsc",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/because-why-not/awrtc_signaling.git"
+  },
+  "keywords": [
+    "webrtc",
+    "signaling",
+    "awrtc",
+    "unity",
+    "WebRtcVideoChat"
+  ],
+  "author": "Christoph Kutza",
+  "email": "contact@because-why-not.com",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/because-why-not/awrtc_signaling/issues"
+  },
+  "homepage": "https://github.com/because-why-not/awrtc_signaling#readme",
+  "dependencies": {
+    "@types/node": "^12.0.5",
+    "express": "^4.13.4",
+    "finalhandler": "^1.1.0",
+    "requirejs": "^2.2.0",
+    "serve-static": "^1.13.1",
+    "ws": "^1.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^3.1.3"
+  }
+}
