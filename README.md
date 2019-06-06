@@ -1,5 +1,6 @@
 ﻿# WebsocketSignaling
 
+## Getting started
 
 To run the server first you need node.js & npm:
 	https://nodejs.org/
@@ -24,8 +25,10 @@ The app should print the following lines (or similar):
 	websockets/http listening on  { address: '0.0.0.0', family: 'IPv4', port: 12776 }
 	secure websockets/https listening on  { address: '0.0.0.0', family: 'IPv4', port: 12777 }
 
+Check the documentation & example applications for awrtc_browser or WebRtcVideoChat to see where to set the signaling URL. 
 
-#Configuration config.json: 
+## Configuration in config.json
+
 You can change used ports and other details in the file config.json. By
 default the app will use two ports 12776 for websockets (ws/http) and 12777 for
 secure websockets(wss/https). Many cloud services / hosting provider only 
@@ -72,6 +75,7 @@ Other settings:
 * app "path": "/callapp" the url used by the app e.g. ws://mydomain.com/callapp
 * app "address_sharing": true  a hack that allows multiple users to use the same address which would otherwise result in an error. All users using the same address are connected to each other
 
+## Testing
 You can now test if your server is running properly:
 
 Depending on the data in your config.json try visiting following urls:
@@ -82,6 +86,7 @@ Depending on the data in your config.json try visiting following urls:
 The two pages should print "running" if the server is active and accessible. If this fails
 the most common problem are issues with firewalls / provider specific issues. Please check with
 your hosting provider first before asking for support or reporting bugs.
+
 
 If you still have open quests or any problems visit
 https://github.com/because-why-not/awrtc_signaling/issues
