@@ -28,9 +28,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-import ws = require('ws');
+import WebSocket = require('ws');
+import * as url from 'url'
+import * as http from 'http';
 import * as inet from './INetwork'
-
 
 
 export interface IAppConfig {
@@ -41,7 +42,32 @@ export interface IAppConfig {
 
 
 export interface IPoolDictionary {
-    [name: string]: PeerPool;
+    [path: string]: PeerPool;
+}
+
+/**
+ * Gathers all data related to a single websocket. 
+ * 
+ */
+export class Endpoint
+{
+    public ws: WebSocket;
+    public remoteAddress:string;
+    public remotePort:number;
+    public localAddress:string;
+    public localPort:number;
+    public appPath:string;
+
+    getConnectionInfo():string{
+
+        return this.remoteAddress + ":" + this.remotePort + " " + this.appPath;
+    }
+
+    getLocalConnectionInfo(): string{
+        if(this.localAddress && this.localPort)
+            return this.localAddress + ":" + this.localPort;
+        return "unknown";
+    }
 }
 
 export class WebsocketNetworkServer {
@@ -66,22 +92,51 @@ export class WebsocketNetworkServer {
     public constructor() {
     }
 
-    private onConnection(socket: ws, appname: string) {
-
-        //it would be possible to enforce the client to send a certain introduction first
-        //to determine to which pool we add it -> for now only one pool is supported
-        
-        this.mPool[appname].add(socket);
+    private onConnection(ep : Endpoint) {
+        this.mPool[ep.appPath].add(ep);
     }
 
-    //
-    public addSocketServer(websocketServer: ws.Server, appConfig: IAppConfig): void {
-        if (this.mPool[appConfig.name] == null) {
-            this.mPool[appConfig.name] = new PeerPool(appConfig);
-        }
+    /**Adds a new websocket server that will be used to receive incoming connections for
+     * the given apps. 
+     * 
+     * @param websocketServer server used for the incoming connections
+     * @param appConfig app the incoming connections are allowed to connect to 
+     * Apps can be given multiple times with different signaling servers to support different
+     * ports and protocols.
+     */
+    public addSocketServer(websocketServer: WebSocket.Server, appConfigs: IAppConfig[]): void {
+        for(let i = 0; i < appConfigs.length; i++)
+        {
+            let app = appConfigs[i];
+            if ((app.path in this.mPool) == false) {
+                console.log("Add new pool " + app.path);
+                this.mPool[app.path] = new PeerPool(app);
+            }
+        };
 
-        let name = appConfig.name;
-        websocketServer.on('connection', (socket: ws) => { this.onConnection(socket, name); });
+        
+        websocketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) => 
+        {
+            let ep = new Endpoint();
+            ep.ws = socket;
+            ep.remoteAddress = request.socket.remoteAddress;
+            ep.remotePort = request.socket.remotePort;
+            ep.localAddress = request.socket.localAddress;
+            ep.localPort = request.socket.localPort;
+            ep.appPath = url.parse(request.url).pathname;
+            
+            if(ep.appPath in this.mPool)
+            {
+                if(WebsocketNetworkServer.sVerboseLog)
+                    console.log("New websocket connection:" + ep.getConnectionInfo());
+                this.onConnection(ep);
+            }else{
+                
+                console.error("Websocket tried to connect to unknown app " + ep.appPath);
+                socket.close();
+            }
+
+        });
     }
 }
 
@@ -113,8 +168,9 @@ class PeerPool {
     }
 
     //add a new connection based on this websocket
-    public add(socket: ws) {
-        this.mConnections.push(new SignalingPeer(this, socket));
+    public add(ep: Endpoint) {
+        let peer = new SignalingPeer(this, ep);
+        this.mConnections.push(peer);
     }
 
     //Returns the SignalingClientConnection that opened a server using the given address
@@ -164,7 +220,7 @@ class PeerPool {
         if (index != -1) {
             this.mConnections.splice(index, 1);
         } else {
-            console.warn("Tried to remove unknown SignalingClientConnection. Bug?" + client.GetName());
+            console.warn("Tried to remove unknown SignalingClientConnection. Bug?" + client.GetLogPrefix());
         }
     }
 
@@ -193,15 +249,13 @@ interface IConnectionIdPeerDictionary {
 class SignalingPeer {
 
     private mConnectionPool: PeerPool;
-    private mSocket: ws;
+    private mEndPoint: Endpoint;
     private mState: SignalingConnectionState = SignalingConnectionState.Uninitialized;
     private mConnections: IConnectionIdPeerDictionary = {};
     //C# version uses short so 16384 is 50% of the positive numbers (maybe might make sense to change to ushort or int)
     private mNextIncomingConnectionId: inet.ConnectionId = new inet.ConnectionId(16384);
 
     private mServerAddress: string;
-
-    private mConInfo = "[con info missing]";
 
     private mPingInterval: NodeJS.Timer;
 
@@ -229,34 +283,26 @@ class SignalingPeer {
     /// </summary>
     private mRemoteProtocolVersion = 1;
 
-    public constructor(pool: PeerPool, socket: ws) {
+    public constructor(pool:PeerPool, ep: Endpoint) {
         this.mConnectionPool = pool;
-        this.mSocket = socket;
+        this.mEndPoint = ep;
         this.mPongReceived = true;
-        //(this.mSocket as any).maxPayload = 16;
 
         this.mState = SignalingConnectionState.Connecting;
 
-        this.mConInfo = this.mSocket.upgradeReq.connection.remoteAddress + ":" + this.mSocket.upgradeReq.connection.remotePort;
 
-        //might be missing this info
-        let con: any = this.mSocket.upgradeReq.connection;
+        WebsocketNetworkServer.logv("[" + this.mEndPoint.getConnectionInfo() + "]" + 
+            " connected on "  + this.mEndPoint.getLocalConnectionInfo());
         
-        let localinfo = "";
-        if(con.localAddress && con.localPort)
-            localinfo = con.localAddress + ":" + con.localPort;
-        WebsocketNetworkServer.logv("[" + this.mConInfo + "]" + 
-            " connected on "  + localinfo);
-        
-        socket.on('message', (message : any, flags: any) => {
+        this.mEndPoint.ws.on('message', (message : any, flags: any) => {
             this.onMessage(message, flags);
         });
-        socket.on('error', (error: any) => {
+        this.mEndPoint.ws.on('error', (error: any) => {
             console.error(error);
         });
-        socket.on('close', (code: number, message: string) => { this.onClose(code, message);});
+        this.mEndPoint.ws.on('close', (code: number, message: string) => { this.onClose(code, message);});
 
-        socket.on('pong', (data: any, flags: { binary: boolean }) =>
+        this.mEndPoint.ws.on('pong', (data: any, flags: { binary: boolean }) =>
         {
             this.mPongReceived = true;
             this.logInc("pong");
@@ -267,20 +313,20 @@ class SignalingPeer {
         this.mPingInterval = setInterval(() => { this.doPing();}, 30000);
     }
 
-    public GetName(): string {
+    public GetLogPrefix(): string {
         //used to identify this peer for log messages / debugging
-        return "[" + this.mConInfo + "]";
+        return "[" + this.mEndPoint.getConnectionInfo() + "]";
     }
 
     private doPing() {
-        if (this.mState == SignalingConnectionState.Connected && this.mSocket.readyState == ws.OPEN)
+        if (this.mState == SignalingConnectionState.Connected && this.mEndPoint.ws.readyState == WebSocket.OPEN)
         {
             if (this.mPongReceived == false) {
                 this.NoPongTimeout();
                 return;
             }
             this.mPongReceived = false;
-            this.mSocket.ping();
+            this.mEndPoint.ws.ping();
             this.logOut("ping");
         }
     }
@@ -317,7 +363,7 @@ class SignalingPeer {
             let msg = inmessage as Uint8Array;
             this.parseMessage(msg);
         } catch (err) {
-            WebsocketNetworkServer.logv(this.GetName() +" Invalid message received: " + inmessage + "  \n Error: " + err);
+            WebsocketNetworkServer.logv(this.GetLogPrefix() +" Invalid message received: " + inmessage + "  \n Error: " + err);
         }
     }
 
@@ -330,7 +376,7 @@ class SignalingPeer {
         //bugfix: apprently 2 sockets can be closed at exactly the same time without
         //onclosed being called immediately -> socket has to be checked if open
         if (this.mState == SignalingConnectionState.Connected
-            && this.mSocket.readyState == this.mSocket.OPEN) { 
+            && this.mEndPoint.ws.readyState == WebSocket.OPEN) { 
 
             this.logOut(this.evtToString(evt));
             let msg = inet.NetworkEvent.toByteArray(evt);
@@ -339,11 +385,11 @@ class SignalingPeer {
     }
     private logOut(msg:string)
     {
-        WebsocketNetworkServer.logv(this.GetName() + "OUT: " + msg);
+        WebsocketNetworkServer.logv(this.GetLogPrefix() + "OUT: " + msg);
     }
     private logInc(msg:string)
     {
-        WebsocketNetworkServer.logv(this.GetName() + "INC: " + msg);
+        WebsocketNetworkServer.logv(this.GetLogPrefix() + "INC: " + msg);
     }
 
     private sendVersion(){
@@ -363,18 +409,18 @@ class SignalingPeer {
     }
 
     private internalSend(msg: Uint8Array){
-        this.mSocket.send(msg);
+        this.mEndPoint.ws.send(msg);
     }
 
     private onClose(code: number, error: string): void
     {
-        WebsocketNetworkServer.logv(this.GetName() + " CLOSED!");
+        WebsocketNetworkServer.logv(this.GetLogPrefix() + " CLOSED!");
         this.Cleanup();
     }
 
     private NoPongTimeout()
     {
-        WebsocketNetworkServer.logv(this.GetName()  + " TIMEOUT!");
+        WebsocketNetworkServer.logv(this.GetLogPrefix()  + " TIMEOUT!");
         this.Cleanup();
     }
 
@@ -386,7 +432,7 @@ class SignalingPeer {
             return;
 
         this.mState = SignalingConnectionState.Disconnecting;
-        WebsocketNetworkServer.logv("[" + this.mConInfo + "]" + " disconnecting.");
+        WebsocketNetworkServer.logv(this.GetLogPrefix() + " disconnecting.");
 
         if (this.mPingInterval != null) {
             clearInterval(this.mPingInterval);
@@ -406,11 +452,11 @@ class SignalingPeer {
         if (this.mServerAddress != null){
             this.stopServer();
         }
-        this.mSocket.terminate();
+        this.mEndPoint.ws.terminate();
 
-        WebsocketNetworkServer.logv("[" + this.mConInfo + "]" + "removed"
+        WebsocketNetworkServer.logv(this.GetLogPrefix() + "removed"
             + " " + this.mConnectionPool.count()
-            + " connections left.");
+            + " connections left in pool ");
         this.mState = SignalingConnectionState.Disconnected;
     }
 

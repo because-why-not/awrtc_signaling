@@ -33,9 +33,7 @@ import url = require('url');
 import ws = require('ws');
 import fs = require('fs');
 import * as wns from './WebsocketNetworkServer';
-import * as inet from './INetwork';
 import serveStatic = require('serve-static');
-import { AddressInfo } from 'net';
 var finalhandler = require('finalhandler');
 
 var config = require("./config.json");
@@ -91,6 +89,11 @@ function defaultRequest(req, res) {
 
   
 
+var signalingServer = new wns.WebsocketNetworkServer();
+
+//const webSocketServer = new ws.Server({ port: 12776 });
+//signalingServer.addSocketServer(webSocketServer, config.apps);
+
 if (config.httpConfig) {
     httpServer = http.createServer(defaultRequest);
     let options = {
@@ -100,11 +103,22 @@ if (config.httpConfig) {
     httpServer.listen(options, function () { 
         console.log('websockets/http listening on ', httpServer.address());
     });
+    //perMessageDeflate: false needs to be set to false turning off the compression. if set to true
+    //the websocket library crashes if big messages are received (eg.128mb) no matter which payload is set!!!
+    var webSocketServer = new ws.Server(
+    {
+        server: httpServer,
+        //path: app.path,
+        maxPayload: config.maxPayload,
+        perMessageDeflate: false
+    });
+    signalingServer.addSocketServer(webSocketServer, config.apps as wns.IAppConfig[]);
 }
 
 
 
-if (config.httpsConfig) {
+if (config.httpsConfig)
+{
     httpsServer = https.createServer({
         key: fs.readFileSync(config.httpsConfig.ssl_key_file),
         cert: fs.readFileSync(config.httpsConfig.ssl_cert_file)
@@ -117,40 +131,12 @@ if (config.httpsConfig) {
     httpsServer.listen(options, function () {
         console.log('secure websockets/https listening on ', httpsServer.address());
         });
+
+    var webSocketSecure = new ws.Server( {
+        server: httpsServer,
+        //path: app.path,
+        maxPayload: config.maxPayload,
+        perMessageDeflate: false
+    }); 
+    signalingServer.addSocketServer(webSocketSecure, config.apps as wns.IAppConfig[]);
 }
-
-
-var websocketSignalingServer = new wns.WebsocketNetworkServer();
-
-
-
-for (let app of config.apps) {
-    if (httpServer) {
-
-        //perMessageDeflate: false needs to be set to false turning off the compression. if set to true
-        //the websocket library crashes if big messages are received (eg.128mb) no matter which payload is set!!!
-        var webSocket = new ws.Server(
-            {
-                server: httpServer,
-                path: app.path,
-                maxPayload: config.maxPayload,
-                perMessageDeflate: false
-            });
-
-        websocketSignalingServer.addSocketServer(webSocket, app);
-
-    }
-    if (httpsServer) {
-        var webSocketSecure = new ws.Server(
-            {
-                server: httpsServer,
-                path: app.path,
-                maxPayload: config.maxPayload,
-                perMessageDeflate: false
-        } as any); //problem in the typings -> setup to only accept http not https so cast to any to turn off typechecks
-        websocketSignalingServer.addSocketServer(webSocketSecure, app);
-
-    }
-}
-
-
