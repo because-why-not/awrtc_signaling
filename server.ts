@@ -51,23 +51,35 @@ if(typeof config.log_verbose === 'undefined' || config.log_verbose == true)
     wns.WebsocketNetworkServer.SetLogLevel(false);
 }
 
-/*
+//azure uses port
+//heroku uses PORT
+var env_port = process.env.port || process.env.PORT;
 
-*/
-if(process.env.port){
-    console.log("The environment variable process.env.port is set to " + process.env.port 
-    + ". Ports set in config json will be ignored");
-}
-if(process.env.port && config.httpConfig && config.httpsConfig)
+//handle special cloud service setup
+if(env_port)
 {
-    //Many hosting provider set process.env.port and don't allow multiple ports 
-    //If this is the case https will be deactivated to avoid a crash due to two services 
-    //trying to use the same port
-    console.warn("Only http/ws will be started as only one port can be set via process.env.port.");
-    console.warn("Remove the httpConfig section in the config.json if you want to use https"
-     +" instead or make sure the PORT variable is not set by you / your provider.");
-    delete config.httpsConfig;
+    console.log("The environment variable process.env.port or PORT is set to " + env_port
+    + ". Ports set in config json will be ignored");
+
+    //overwrite config ports to use whatever the cloud wants us to
+    if(config.httpConfig)
+        config.httpConfig.port = env_port;
+    if(config.httpsConfig)
+        config.httpsConfig.port = env_port;
+    
+    if(config.httpConfig && config.httpsConfig)
+    {
+        //Many cloud provider set process.env.port and don't allow multiple ports 
+        //If this is the case https will be deactivated to avoid a crash due to two services 
+        //trying to use the same port
+        //heroku will actually reroute HTTPS port 443 to regular HTTP on 80 so one port with HTTP is enough
+        console.warn("Only http/ws will be started as only one port can be set via process.env.port.");
+        console.warn("Remove the httpConfig section in the config.json if you want to use https"
+        +" instead or make sure the PORT variable is not set by you / your provider.");
+        delete config.httpsConfig;
+    }
 }
+
 
 
 
@@ -97,7 +109,7 @@ var signalingServer = new wns.WebsocketNetworkServer();
 if (config.httpConfig) {
     httpServer = http.createServer(defaultRequest);
     let options = {
-        port: process.env.port || config.httpConfig.port,
+        port: config.httpConfig.port,
         host: config.httpConfig.host
     }
     httpServer.listen(options, function () { 
@@ -125,7 +137,7 @@ if (config.httpsConfig)
     }, defaultRequest);
     
     let options = {
-        port: process.env.port || config.httpsConfig.port,
+        port: config.httpsConfig.port,
         host: config.httpsConfig.host
     }
     httpsServer.listen(options, function () {

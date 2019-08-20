@@ -5,7 +5,9 @@
   "main": "out/server.js",
   "scripts": {
     "tsc": "tsc",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "(cd out && node server.js)",
+    "postinstall" : "npm run build"
   },
   "repository": {
     "type": "git",
