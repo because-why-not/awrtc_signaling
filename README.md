@@ -33,8 +33,10 @@ The app should print the following lines (or similar) once ready to receive conn
 Shut down using ctrl + c. If the first run was successful then now is a good time to customize it:
 
 1. Set the ports and app url's you want to use via the `.env.json`
-2. IMPORTANT: Make sure the ports you set are actually opened in the firewall on your machine and / or the firewall from your provider!!!
-3. Replace the files ssl.crt and ssl.key with your own SSL certificate. If you don't have one: http://letsencrypt.org
+2. IMPORTANT: Make sure the ports you set are actually opened in the firewall on
+   your machine and / or the firewall from your provider!!!
+3. Replace the files ssl.crt and ssl.key with your own SSL certificate. If you
+   don't have one: http://letsencrypt.org
 4. Use pm2 or similar to automatically start the server on boot
 
 If this was too quick:

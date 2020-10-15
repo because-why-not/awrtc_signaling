@@ -36,7 +36,7 @@ import * as wns from './WebsocketNetworkServer';
 import serveStatic = require('serve-static');
 var finalhandler = require('finalhandler');
 
-var config = require("../.env.json");
+var config = require("./.env.json");
 
 
 
