@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright (c) 2019, because-why-not.com Limited
 All rights reserved.
 
@@ -46,8 +46,8 @@ export interface IPoolDictionary {
 }
 
 /**
- * Gathers all data related to a single websocket. 
- * 
+ * Gathers all data related to a single websocket.
+ *
  */
 export class Endpoint
 {
@@ -87,7 +87,7 @@ export class WebsocketNetworkServer {
             console.log("(" + new Date().toISOString() + ")" + msg);
         }
     }
-    
+
 
     public constructor() {
     }
@@ -97,10 +97,10 @@ export class WebsocketNetworkServer {
     }
 
     /**Adds a new websocket server that will be used to receive incoming connections for
-     * the given apps. 
-     * 
+     * the given apps.
+     *
      * @param websocketServer server used for the incoming connections
-     * @param appConfig app the incoming connections are allowed to connect to 
+     * @param appConfig app the incoming connections are allowed to connect to
      * Apps can be given multiple times with different signaling servers to support different
      * ports and protocols.
      */
@@ -114,8 +114,8 @@ export class WebsocketNetworkServer {
             }
         };
 
-        
-        websocketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) => 
+
+        websocketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) =>
         {
             let ep = new Endpoint();
             ep.ws = socket;
@@ -124,14 +124,14 @@ export class WebsocketNetworkServer {
             ep.localAddress = request.socket.localAddress;
             ep.localPort = request.socket.localPort;
             ep.appPath = url.parse(request.url).pathname;
-            
+
             if(ep.appPath in this.mPool)
             {
                 if(WebsocketNetworkServer.sVerboseLog)
                     console.log("New websocket connection:" + ep.getConnectionInfo());
                 this.onConnection(ep);
             }else{
-                
+
                 console.error("Websocket tried to connect to unknown app " + ep.appPath);
                 socket.close();
             }
@@ -179,7 +179,7 @@ class PeerPool {
         return this.mServers[address];
     }
 
-    //Tests if the address is available for use. 
+    //Tests if the address is available for use.
     //returns true in the following cases
     //the address is longer than the maxAddressLength and the server the address is not yet in use or address sharing is active
     public isAddressAvailable(address: string): boolean{
@@ -189,7 +189,7 @@ class PeerPool {
         }
         return false;
     }
-    
+
     //Adds the server. No checking is performed here! logic should be solely in the connection class
     public addServer(client: SignalingPeer, address: string) {
         if (this.mServers[address] == null) {
@@ -260,7 +260,7 @@ class SignalingPeer {
     private mPingInterval: NodeJS.Timer;
 
     /**false = We are waiting for a pong. If it
-     * stays false until the next ping interval 
+     * stays false until the next ping interval
      * we disconnect.
      */
     private mPongReceived: boolean;
@@ -291,9 +291,9 @@ class SignalingPeer {
         this.mState = SignalingConnectionState.Connecting;
 
 
-        WebsocketNetworkServer.logv("[" + this.mEndPoint.getConnectionInfo() + "]" + 
+        WebsocketNetworkServer.logv("[" + this.mEndPoint.getConnectionInfo() + "]" +
             " connected on "  + this.mEndPoint.getLocalConnectionInfo());
-        
+
         this.mEndPoint.ws.on('message', (message : any, flags: any) => {
             this.onMessage(message, flags);
         });
@@ -332,7 +332,7 @@ class SignalingPeer {
     }
     private evtToString(evt: inet.NetworkEvent) : string
     {
-        
+
         let output = "[";
         output += "NetEventType: (";
         output += inet.NetEventType[evt.Type];
@@ -376,7 +376,7 @@ class SignalingPeer {
         //bugfix: apprently 2 sockets can be closed at exactly the same time without
         //onclosed being called immediately -> socket has to be checked if open
         if (this.mState == SignalingConnectionState.Connected
-            && this.mEndPoint.ws.readyState == WebSocket.OPEN) { 
+            && this.mEndPoint.ws.readyState == WebSocket.OPEN) {
 
             this.logOut(this.evtToString(evt));
             let msg = inet.NetworkEvent.toByteArray(evt);
@@ -442,13 +442,13 @@ class SignalingPeer {
 
         //disconnect all connections
         let test: any = this.mConnections;//workaround for not having a proper dictionary yet...
-        
+
         for (let v in this.mConnections) {
             if (this.mConnections.hasOwnProperty(v))
                 this.disconnect(new inet.ConnectionId(+v));
         }
 
-        //make sure the server address is freed 
+        //make sure the server address is freed
         if (this.mServerAddress != null){
             this.stopServer();
         }
@@ -528,9 +528,9 @@ class SignalingPeer {
     }
 
     private internalAddOutgoingPeer(peer: SignalingPeer, id: inet.ConnectionId): void {
-        //this peer successfully connected to another peer. id was generated on the 
+        //this peer successfully connected to another peer. id was generated on the
         //client side
-        
+
         this.mConnections[id.id] = peer;
 
         //event to this (the other peer gets the event via addOutgoing
@@ -617,7 +617,7 @@ class SignalingPeer {
             this.internalRemovePeer(connectionId);
             otherPeer.internalRemovePeer(idOfOther);
         } else {
-            //the connectionid isn't connected 
+            //the connectionid isn't connected
             //invalid -> do nothing or log?
         }
     }
@@ -672,5 +672,3 @@ class SignalingPeer {
     }
 
 }
-
-

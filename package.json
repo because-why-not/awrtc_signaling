@@ -7,7 +7,7 @@
     "tsc": "tsc",
     "build": "tsc",
     "start": "(cd out && node server.js)",
-    "postinstall" : "npm run build"
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",

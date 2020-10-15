@@ -1,4 +1,4 @@
-﻿# WebsocketSignaling
+# WebsocketSignaling
 
 ## Quick Setup
 
