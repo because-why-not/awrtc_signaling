@@ -124,38 +124,6 @@ export class NetworkEvent {
         return output;
     }
 
-    public static parseFromString(str: string): NetworkEvent {
-
-        let values = JSON.parse(str);
-
-
-        let data: any;
-        if (values.data == null) {
-            data = null;
-        } else if (typeof values.data == "string") {
-            data = values.data;
-        } else if (typeof values.data == "object") {
-
-            //json represents the array as an object containing each index and the
-            //value as string number ... improve that later
-            let arrayAsObject = values.data;
-            var length = 0;
-            for (var prop in arrayAsObject) {
-                //if (arrayAsObject.hasOwnProperty(prop)) { //shouldnt be needed
-                length++;
-                //}
-            }
-            let buffer = new Uint8Array(Object.keys(arrayAsObject).length);
-            for (let i = 0; i < buffer.length; i++)
-                buffer[i] = arrayAsObject[i];
-            data = buffer;
-        } else {
-            console.log("network event can't be parsed: " + str);
-        }
-        var evt = new NetworkEvent(values.type, values.connectionId, data);
-        return evt;
-    }
-
     public static toString(evt: NetworkEvent): string {
         return JSON.stringify(evt);
     }
