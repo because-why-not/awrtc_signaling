@@ -47,7 +47,6 @@ export interface IPoolDictionary {
 
 /**
  * Gathers all data related to a single websocket.
- *
  */
 export class Endpoint
 {
@@ -59,7 +58,6 @@ export class Endpoint
     public appPath:string;
 
     getConnectionInfo():string{
-
         return this.remoteAddress + ":" + this.remotePort + " " + this.appPath;
     }
 
@@ -71,8 +69,6 @@ export class Endpoint
 }
 
 export class WebsocketNetworkServer {
-
-
     private mPool: IPoolDictionary = {};
 
     private static sVerboseLog = true;
@@ -83,26 +79,21 @@ export class WebsocketNetworkServer {
 
     public static logv(msg: string) {
         if(WebsocketNetworkServer.sVerboseLog)
-        {
             console.log("(" + new Date().toISOString() + ")" + msg);
-        }
-    }
-
-
-    public constructor() {
     }
 
     private onConnection(ep : Endpoint) {
         this.mPool[ep.appPath].add(ep);
     }
 
-    /**Adds a new websocket server that will be used to receive incoming connections for
-     * the given apps.
+    /**
+     * Adds a new websocket server that will be used to receive incoming
+     * connections for the given apps.
      *
      * @param websocketServer server used for the incoming connections
-     * @param appConfig app the incoming connections are allowed to connect to
-     * Apps can be given multiple times with different signaling servers to support different
-     * ports and protocols.
+     * @param appConfig app the incoming connections are allowed to connect to.
+     *  Apps can be given multiple times with different signaling servers to
+     *  support different ports and protocols.
      */
     public addSocketServer(websocketServer: WebSocket.Server, appConfigs: IAppConfig[]): void {
         for(let i = 0; i < appConfigs.length; i++)
@@ -113,7 +104,6 @@ export class WebsocketNetworkServer {
                 this.mPool[app.path] = new PeerPool(app);
             }
         };
-
 
         websocketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) =>
         {
@@ -131,11 +121,9 @@ export class WebsocketNetworkServer {
                     console.log("New websocket connection:" + ep.getConnectionInfo());
                 this.onConnection(ep);
             }else{
-
                 console.error("Websocket tried to connect to unknown app " + ep.appPath);
                 socket.close();
             }
-
         });
     }
 }
@@ -144,9 +132,10 @@ interface IAddressPeerDictionary {
     [key: string]: Array<SignalingPeer>;
 };
 
-//Pool of client connects that are allowed to communicate to each other
+/**
+ * Pool of client connects that are allowed to communicate to each other
+ */
 class PeerPool {
-
     private mConnections: Array<SignalingPeer> = new Array<SignalingPeer>();
     private mServers: IAddressPeerDictionary = {};
     private mAddressSharing = false;
@@ -162,26 +151,29 @@ class PeerPool {
         }
     }
 
-
     public hasAddressSharing(): boolean{
         return this.mAddressSharing;
     }
 
-    //add a new connection based on this websocket
+    /**
+     * add a new connection based on this websocket
+     */
     public add(ep: Endpoint) {
         let peer = new SignalingPeer(this, ep);
         this.mConnections.push(peer);
     }
 
-    //Returns the SignalingClientConnection that opened a server using the given address
-    //or null if address not in use
+    /**
+     * Returns the SignalingClientConnection that opened a server using the
+     * given address or null if address not in use
+     */
     public getServerConnection(address: string): SignalingPeer[] {
         return this.mServers[address];
     }
 
     //Tests if the address is available for use.
     //returns true in the following cases
-    //the address is longer than the maxAddressLength and the server the address is not yet in use or address sharing is active
+    //the address is shorter than the maxAddressLength and the server address is not yet in use or address sharing is active
     public isAddressAvailable(address: string): boolean{
         if (address.length <= this.maxAddressLength // only allow addresses shorter than maxAddressLength
             && (this.mServers[address] == null || this.mAddressSharing)) {
@@ -197,6 +189,7 @@ class PeerPool {
         }
         this.mServers[address].push(client);
     }
+
     //Removes an address from the server. No checks performed
     public removeServer(client: SignalingPeer, address: string) {
 
@@ -224,12 +217,9 @@ class PeerPool {
         }
     }
 
-
     public count(): number {
         return this.mConnections.length;
     }
-
-
 }
 
 enum SignalingConnectionState {
@@ -243,23 +233,27 @@ interface IConnectionIdPeerDictionary {
     [key: string]: SignalingPeer;
 };
 
-///note: all methods starting with "internal" might leave the system in an inconsistent state
-///e.g. peerA is connected to peerB means peerB is connected to peerA but internalRemoveConnection
-///could cause peerA being disconnected from peerB but peerB still thinking to be connected to peerA!!!
+/**
+ * note: all methods starting with "internal" might leave the system in an
+ * inconsistent state e.g. peerA is connected to peerB means peerB is connected
+ * to peerA but internalRemoveConnection could cause peerA being disconnected
+ * from peerB but peerB still thinking to be connected to peerA!!!
+ */
 class SignalingPeer {
-
     private mConnectionPool: PeerPool;
     private mEndPoint: Endpoint;
     private mState: SignalingConnectionState = SignalingConnectionState.Uninitialized;
     private mConnections: IConnectionIdPeerDictionary = {};
-    //C# version uses short so 16384 is 50% of the positive numbers (maybe might make sense to change to ushort or int)
+    // C# version uses short so 16384 is 50% of the positive numbers (maybe
+    // might make sense to change to ushort or int)
     private mNextIncomingConnectionId: inet.ConnectionId = new inet.ConnectionId(16384);
 
     private mServerAddress: string;
 
     private mPingInterval: NodeJS.Timer;
 
-    /**false = We are waiting for a pong. If it
+    /**
+     * false = We are waiting for a pong. If it
      * stays false until the next ping interval
      * we disconnect.
      */
@@ -330,9 +324,9 @@ class SignalingPeer {
             this.logOut("ping");
         }
     }
+
     private evtToString(evt: inet.NetworkEvent) : string
     {
-
         let output = "[";
         output += "NetEventType: (";
         output += inet.NetEventType[evt.Type];
@@ -356,9 +350,7 @@ class SignalingPeer {
         return output;
     }
 
-
     private onMessage(inmessage: any, flags: any): void {
-
         try {
             let msg = inmessage as Uint8Array;
             this.parseMessage(msg);
@@ -367,26 +359,25 @@ class SignalingPeer {
         }
     }
 
-
     private sendToClient(evt: inet.NetworkEvent) {
-
         //this method is also called during cleanup after a disconnect
         //check first if we are still connected
 
-        //bugfix: apprently 2 sockets can be closed at exactly the same time without
+        //bugfix: aparently 2 sockets can be closed at exactly the same time without
         //onclosed being called immediately -> socket has to be checked if open
         if (this.mState == SignalingConnectionState.Connected
             && this.mEndPoint.ws.readyState == WebSocket.OPEN) {
-
             this.logOut(this.evtToString(evt));
             let msg = inet.NetworkEvent.toByteArray(evt);
             this.internalSend(msg);
         }
     }
+
     private logOut(msg:string)
     {
         WebsocketNetworkServer.logv(this.GetLogPrefix() + "OUT: " + msg);
     }
+
     private logInc(msg:string)
     {
         WebsocketNetworkServer.logv(this.GetLogPrefix() + "INC: " + msg);
@@ -462,7 +453,6 @@ class SignalingPeer {
 
     private parseMessage(msg:Uint8Array):void
     {
-
         if(msg[0] == inet.NetEventType.MetaVersion)
         {
             let v = msg[1];
@@ -480,8 +470,8 @@ class SignalingPeer {
             this.handleIncomingEvent(evt);
         }
     }
-    private handleIncomingEvent(evt: inet.NetworkEvent) {
 
+    private handleIncomingEvent(evt: inet.NetworkEvent) {
         //update internal state based on the event
         if (evt.Type == inet.NetEventType.NewConnection) {
             //client wants to connect to another client
@@ -490,17 +480,12 @@ class SignalingPeer {
             //the id this connection should be addressed with
             let newConnectionId = evt.ConnectionId;
             this.connect(address, newConnectionId);
-
         } else if (evt.Type == inet.NetEventType.ConnectionFailed) {
-
             //should never be received
-
         } else if (evt.Type == inet.NetEventType.Disconnected) {
-
             //peer tries to disconnect from another peer
             var otherPeerId = evt.ConnectionId;
             this.disconnect(otherPeerId);
-
         } else if (evt.Type == inet.NetEventType.ServerInitialized) {
             this.startServer(evt.Info);
         } else if (evt.Type == inet.NetEventType.ServerInitFailed) {
@@ -516,7 +501,6 @@ class SignalingPeer {
     }
 
     private internalAddIncomingPeer(peer: SignalingPeer): void {
-
         //another peer connected to this (while allowing incoming connections)
 
         //store the reference
@@ -541,14 +525,13 @@ class SignalingPeer {
         delete this.mConnections[id.id];
         this.sendToClient(new inet.NetworkEvent(inet.NetEventType.Disconnected, id, null));
     }
+
     //test this. might cause problems
     //the number is converted to string trough java script but we need get back the number
     //for creating the connection id
     private findPeerConnectionId(otherPeer: SignalingPeer) {
-
         for (let peer in this.mConnections) {
             if (this.mConnections[peer] === otherPeer) {
-
                 return new inet.ConnectionId(+peer);
             }
         }
@@ -560,20 +543,15 @@ class SignalingPeer {
         return result;
     }
 
-
-
-
     //public methods (not really needed but can be used for testing or server side deubgging)
 
     //this peer initializes a connection to a certain address. The connection id is set by the client
     //to allow tracking of the connection attempt
     public connect(address: string, newConnectionId: inet.ConnectionId) {
-
         var serverConnections = this.mConnectionPool.getServerConnection(address);
 
         //
         if (serverConnections != null && serverConnections.length == 1) {
-
             //inform the server connection about the new peer
             //events will be send by these methods
 
@@ -587,17 +565,15 @@ class SignalingPeer {
 
         }
     }
+
     //join connection happens if another user joins a multi address. it will connect to every address
     //listening to that room
     public connectJoin(address: string) {
-
         var serverConnections = this.mConnectionPool.getServerConnection(address);
 
         //in join mode every connection is incoming as everyone listens together
         if (serverConnections != null) {
-
             for (var v of serverConnections) {
-
                 if (v != this) { //avoid connecting the peer to itself
                     v.internalAddIncomingPeer(this);
                     this.internalAddIncomingPeer(v);
@@ -605,12 +581,11 @@ class SignalingPeer {
             }
         }
     }
-    public disconnect(connectionId: inet.ConnectionId) {
 
+    public disconnect(connectionId: inet.ConnectionId) {
         var otherPeer = this.mConnections[connectionId.id];
 
         if (otherPeer != null) {
-
             let idOfOther = otherPeer.findPeerConnectionId(this);
 
             //find the connection id the other peer uses to talk to this one
@@ -623,13 +598,11 @@ class SignalingPeer {
     }
 
     public startServer(address: string) {
-
         //what to do if it is already a server?
         if (this.mServerAddress != null)
             this.stopServer();
 
         if (this.mConnectionPool.isAddressAvailable(address)) {
-
             this.mServerAddress = address;
             this.mConnectionPool.addServer(this, address);
             this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ServerInitialized, inet.ConnectionId.INVALID, address));
@@ -638,12 +611,9 @@ class SignalingPeer {
                 //address sharing is active. connect to every endpoint already listening on this address
                 this.connectJoin(address);
             }
-
-
         } else {
             this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ServerInitFailed, inet.ConnectionId.INVALID, address));
         }
-
     }
 
     public stopServer() {
@@ -657,18 +627,16 @@ class SignalingPeer {
 
     //delivers the message to the local peer
     private forwardMessage(senderPeer: SignalingPeer, msg: any, reliable: boolean) {
-
         let id = this.findPeerConnectionId(senderPeer);
         if (reliable)
             this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ReliableMessageReceived, id, msg));
         else
             this.sendToClient(new inet.NetworkEvent(inet.NetEventType.UnreliableMessageReceived, id, msg));
     }
-    public sendData(id: inet.ConnectionId, msg: any, reliable: boolean) {
 
+    public sendData(id: inet.ConnectionId, msg: any, reliable: boolean) {
         let peer = this.mConnections[id.id];
         if(peer != null)
             peer.forwardMessage(this, msg, reliable);
     }
-
 }

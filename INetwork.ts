@@ -27,15 +27,15 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
 /** Abstract interfaces and serialization to keep different
  * versions compatible to each other.
- * 
+ *
  * Watch out before changing anything in this file. Content is reused
  * between webclient, signaling server and needs to remain compatible to
  * the C# implementation.
  */
 
- 
 
 export enum NetEventType {
     Invalid = 0,
@@ -52,7 +52,7 @@ export enum NetEventType {
     Log = 102, //not yet used
 
     /// <summary>
-    /// This value and higher are reserved for other uses. 
+    /// This value and higher are reserved for other uses.
     /// Should never get to the user and should be filtered out.
     /// </summary>
     ReservedStart = 200,
@@ -67,14 +67,14 @@ export enum NetEventType {
     /// </summary>
     MetaHeartbeat = 202
 }
+
 export enum NetEventDataType {
     Null = 0,
     ByteArray = 1, //leading 32 bit byte length + byte array
-    UTF16String = 2, //leading 32 bit length (in utf16 chunks)  + UTF 16 
+    UTF16String = 2, //leading 32 bit length (in utf16 chunks)  + UTF 16
 }
 
 export class NetworkEvent {
-
     private type: NetEventType;
     private connectionId: ConnectionId;
     private data: any;
@@ -104,6 +104,7 @@ export class NetworkEvent {
     public get Type(): NetEventType {
         return this.type;
     }
+
     public get ConnectionId(): ConnectionId {
         return this.connectionId;
     }
@@ -127,6 +128,7 @@ export class NetworkEvent {
     public static toString(evt: NetworkEvent): string {
         return JSON.stringify(evt);
     }
+
     public static fromByteArray(arrin: Uint8Array): NetworkEvent {
         //old node js versions seem to not return proper Uint8Arrays but
         //buffers -> make sure it is a Uint8Array
@@ -136,16 +138,12 @@ export class NetworkEvent {
         let dataType: NetEventDataType = arr[1]; //byte
         let id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
 
-        
         let data: any = null;
         if (dataType == NetEventDataType.ByteArray) {
-
             let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
             let byteArray = new Uint8Array(arr.buffer, arr.byteOffset + 8, length);
             data = byteArray;
-
         } else if (dataType == NetEventDataType.UTF16String) {
-
             let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
             let uint16Arr = new Uint16Array(arr.buffer, arr.byteOffset + 8, length);
 
@@ -166,8 +164,8 @@ export class NetworkEvent {
         let result: NetworkEvent = new NetworkEvent(type, conId, data);
         return result;
     }
-    public static toByteArray(evt: NetworkEvent): Uint8Array {
 
+    public static toByteArray(evt: NetworkEvent): Uint8Array {
         let dataType: NetEventDataType;
         let length = 4; //4 bytes are always needed
 
@@ -193,7 +191,6 @@ export class NetworkEvent {
         conIdField[0] = evt.connectionId.id;
 
         if (dataType == NetEventDataType.ByteArray) {
-
             let byteArray: Uint8Array = evt.data;
             let lengthField = new Uint32Array(result.buffer, result.byteOffset + 4, 1);
             lengthField[0] = byteArray.length;
@@ -201,7 +198,6 @@ export class NetworkEvent {
                 result[8 + i] = byteArray[i];
             }
         } else if (dataType == NetEventDataType.UTF16String) {
-
             let str: string = evt.data;
             let lengthField = new Uint32Array(result.buffer, result.byteOffset + 4, 1);
             lengthField[0] = str.length;
@@ -210,14 +206,12 @@ export class NetworkEvent {
             for (let i = 0; i < dataField.length; i++) {
                 dataField[i] = str.charCodeAt(i);
             }
-
         }
         return result;
     }
 }
 
 export class ConnectionId {
-
     public static INVALID: ConnectionId = new ConnectionId(-1);
 
     id: number;
@@ -225,12 +219,11 @@ export class ConnectionId {
     constructor(nid: number) {
         this.id = nid;
     }
-
-
 }
+
 /// <summary>
 /// Interface to a network that doesn't enforce storing any states.
-/// 
+///
 /// Anything more is reusable between multiple different networks.
 /// </summary>
 export interface INetwork {
@@ -268,7 +261,7 @@ export interface INetwork {
     /// <summary>
     /// Disconnects all connection and shutsdown the server if started.
     /// Dequeue will still return the confirmation messages such as Disconnected event for each connection.
-    /// 
+    ///
     /// </summary>
     Shutdown(): void;
 
@@ -283,16 +276,15 @@ export interface INetwork {
 
 /// <summary>
 /// Shared interface for WebRtcNetwork and UnityNetwork.
-/// 
-/// Keep in mind that in the current version the network can only act as a server (StartServer method) or 
+///
+/// Keep in mind that in the current version the network can only act as a server (StartServer method) or
 /// as a client (via Connect method).
 /// </summary>
 export interface IBasicNetwork extends INetwork {
-
     /// <summary>
     /// Starts a new server. After the server is started the Dequeue method will return a
     /// ServerInitialized event with the address in the Info field.
-    /// 
+    ///
     /// If the server fails to start it will return a ServerInitFailed event. If the
     /// server is closed due to an error or the Shutdown method a ServerClosed event
     /// will be triggered.
@@ -302,18 +294,17 @@ export interface IBasicNetwork extends INetwork {
 
     /// <summary>
     /// Connects to a given address or roomname.
-    /// 
+    ///
     /// This call will result in one of those 2 events in response:
     /// * NewConnection if the connection was established
     /// * ConnectionFailed if the connection failed.
-    /// 
-    /// 
+    ///
     /// </summary>
     /// <param name="address">A string that identifies the target.</param>
     /// <returns>Returns the Connection id the established connection will have (only supported by WebRtcNetwork).</returns>
     Connect(address: string): ConnectionId;
 }
-export interface IWebRtcNetwork extends IBasicNetwork {
-}
-//export {NetEventType, NetworkEvent, ConnectionId, INetwork, IBasicNetwork};
 
+export interface IWebRtcNetwork extends IBasicNetwork {}
+
+//export {NetEventType, NetworkEvent, ConnectionId, INetwork, IBasicNetwork};
