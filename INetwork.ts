@@ -79,7 +79,7 @@ export class NetworkEvent {
     private connectionId: ConnectionId;
     private data: any;
 
-    constructor(t: NetEventType, conId: ConnectionId, data: any) {
+    constructor(t: NetEventType, conId?: ConnectionId, data?: any) {
         this.type = t;
         this.connectionId = conId;
         this.data = data;
@@ -138,29 +138,36 @@ export class NetworkEvent {
         let dataType: NetEventDataType = arr[1]; //byte
         let id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
 
+        let conId: ConnectionId = null;
         let data: any = null;
-        if (dataType == NetEventDataType.ByteArray) {
-            let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
-            let byteArray = new Uint8Array(arr.buffer, arr.byteOffset + 8, length);
-            data = byteArray;
-        } else if (dataType == NetEventDataType.UTF16String) {
-            let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
-            let uint16Arr = new Uint16Array(arr.buffer, arr.byteOffset + 8, length);
 
-            let str: string = "";
-            for (let i = 0; i < uint16Arr.length; i++) {
-                str += String.fromCharCode(uint16Arr[i]);
-            }
-            data = str;
-        } else if (dataType == NetEventDataType.Null) {
-            //message has no data
-        }
-        else
+        if(type == NetEventType.MetaVersion)
+            data = dataType;
+
+        else if (type != NetEventType.MetaHeartbeat)
         {
-            throw new Error('Message has an invalid data type flag: ' + dataType);
+            let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
+
+            if (dataType == NetEventDataType.ByteArray) {
+                let byteArray = new Uint8Array(arr.buffer, arr.byteOffset + 8, length);
+                data = byteArray;
+            } else if (dataType == NetEventDataType.UTF16String) {
+                let uint16Arr = new Uint16Array(arr.buffer, arr.byteOffset + 8, length);
+
+                let str: string = "";
+                for (let i = 0; i < uint16Arr.length; i++) {
+                    str += String.fromCharCode(uint16Arr[i]);
+                }
+                data = str;
+            } else if (dataType == NetEventDataType.Null) {
+                //message has no data
+            }
+            else
+                throw new Error('Message has an invalid data type flag: ' + dataType);
+
+            conId = new ConnectionId(id);
         }
 
-        let conId: ConnectionId = new ConnectionId(id);
         let result: NetworkEvent = new NetworkEvent(type, conId, data);
         return result;
     }

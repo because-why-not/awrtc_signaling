@@ -453,27 +453,22 @@ class SignalingPeer {
 
     private parseMessage(msg:Uint8Array):void
     {
-        if(msg[0] == inet.NetEventType.MetaVersion)
+        let evt = inet.NetworkEvent.fromByteArray(msg);
+        this.logInc( this.evtToString(evt));
+
+        if(evt.Type == inet.NetEventType.MetaVersion)
         {
             let v = msg[1];
             this.logInc("protocol version " + v);
             this.mRemoteProtocolVersion = v;
             this.sendVersion();
 
-        }else if(msg[0] == inet.NetEventType.MetaHeartbeat)
+        } else if(evt.Type == inet.NetEventType.MetaHeartbeat)
         {
             this.logInc("heartbeat");
             this.sendHeartbeat();
-        }else{
-            let evt = inet.NetworkEvent.fromByteArray(msg);
-            this.logInc( this.evtToString(evt));
-            this.handleIncomingEvent(evt);
-        }
-    }
 
-    private handleIncomingEvent(evt: inet.NetworkEvent) {
-        //update internal state based on the event
-        if (evt.Type == inet.NetEventType.NewConnection) {
+        } else if (evt.Type == inet.NetEventType.NewConnection) {
             //client wants to connect to another client
             let address: string = evt.Info;
 
@@ -586,9 +581,9 @@ class SignalingPeer {
         var otherPeer = this.mConnections[connectionId.id];
 
         if (otherPeer != null) {
+            //find the connection id the other peer uses to talk to this one
             let idOfOther = otherPeer.findPeerConnectionId(this);
 
-            //find the connection id the other peer uses to talk to this one
             this.internalRemovePeer(connectionId);
             otherPeer.internalRemovePeer(idOfOther);
         } else {
