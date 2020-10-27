@@ -513,7 +513,7 @@ class SignalingPeer {
         this.mConnections[id.id] = peer;
 
         //event to this (the other peer gets the event via addOutgoing
-        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection, id, null));
+        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection, id, true));
     }
 
     private internalRemovePeer(id: inet.ConnectionId) {
@@ -557,7 +557,6 @@ class SignalingPeer {
         } else {
             //if address is not in use or it is in multi join mode -> connection fails
             this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ConnectionFailed, newConnectionId, null));
-
         }
     }
 
