@@ -614,10 +614,10 @@ class SignalingPeer {
     public stopServer() {
         if (this.mServerAddress != null) {
             this.mConnectionPool.removeServer(this, this.mServerAddress);
-            this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ServerClosed, inet.ConnectionId.INVALID, null));
             this.mServerAddress = null;
         }
-        //do nothing if it wasnt a server
+
+        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ServerClosed, inet.ConnectionId.INVALID, null));
     }
 
     //delivers the message to the local peer
