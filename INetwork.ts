@@ -47,6 +47,7 @@ export enum NetEventType {
     NewConnection = 6,//new incoming or outgoing connection established
     ConnectionFailed = 7,//outgoing connection failed
     Disconnected = 8,//a connection was disconnected
+
     FatalError = 100, //not yet used
     Warning = 101,//not yet used
     Log = 102, //not yet used

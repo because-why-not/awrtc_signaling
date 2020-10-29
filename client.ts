@@ -21,6 +21,27 @@ import WebSocket from 'ws'
 import {ConnectionId, NetworkEvent, NetEventType} from './INetwork'
 
 
+class ClientEvent extends Event
+{
+  connectionId: ConnectionId
+  error: Error
+  info: string
+  messageData: Uint8Array
+  rawData: any
+
+  constructor(type: string, error: Error, connectionId: ConnectionId,
+    info: string, messageData: Uint8Array, rawData: any)
+  {
+    super(error ? 'error' : type)
+
+    this.error = error
+    this.info = info
+    this.messageData = messageData
+    this.rawData = rawData
+  }
+}
+
+
 export class Client extends EventTarget
 {
   constructor(ws)
@@ -318,18 +339,15 @@ export class Client extends EventTarget
     if(error === true)
       error = new Error(`Unexpected ${Type} message: '${Info}'`)
 
-    const event = new Event(error ? 'error' : (typeArg || NetEventType[Type]))
-    event.error = error
-
-    event.ConnectionId = ConnectionId
-    event.Info         = Info
-    event.MessageData  = MessageData
-    event.RawData      = RawData
+    const event = new ClientEvent(typeArg || NetEventType[Type], error,
+      ConnectionId, Info, MessageData, RawData)
 
     this.dispatchEvent(event)
   }
 
-  #send(type: NetEventType, conId?: ConnectionId, data?: any)
+  // TODO TypeScript don't support private methods
+  //      https://github.com/denoland/deno/issues/5258
+  #send = (type: NetEventType, conId?: ConnectionId, data?: any) =>
   {
     this.#ws.send(NetworkEvent.toByteArray(new NetworkEvent(type, conId, data)))
   }
