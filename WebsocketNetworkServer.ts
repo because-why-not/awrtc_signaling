@@ -336,7 +336,8 @@ class SignalingPeer {
             output += "), Data: (";
             output += evt.Info;
         } else if (evt.MessageData != null) {
-            let chars = new Uint16Array(evt.MessageData.buffer, evt.MessageData.byteOffset, evt.MessageData.byteLength / 2);
+            let chars = new Uint16Array(evt.MessageData.buffer,
+                evt.MessageData.byteOffset, evt.MessageData.byteLength / 2);
             output += "), Data: (";
             let binaryString = "";
 
@@ -355,7 +356,8 @@ class SignalingPeer {
             let msg = inmessage as Uint8Array;
             this.parseMessage(msg);
         } catch (err) {
-            WebsocketNetworkServer.logv(this.GetLogPrefix() +" Invalid message received: " + inmessage + "  \n Error: " + err);
+            WebsocketNetworkServer.logv(this.GetLogPrefix() +" Invalid message received: "
+            + inmessage + "  \n Error: " + err);
         }
     }
 
@@ -418,8 +420,10 @@ class SignalingPeer {
     //used for onClose or NoPongTimeout
     private Cleanup()
     {
-        //if the connection was cleaned up during a timeout it might get triggered again during closing.
-        if (this.mState === SignalingConnectionState.Disconnecting || this.mState === SignalingConnectionState.Disconnected)
+        // if the connection was cleaned up during a timeout it might get
+        // triggered again during closing.
+        if (this.mState === SignalingConnectionState.Disconnecting
+        ||  this.mState === SignalingConnectionState.Disconnected)
             return;
 
         this.mState = SignalingConnectionState.Disconnecting;
