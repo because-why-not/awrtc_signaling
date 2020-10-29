@@ -516,9 +516,10 @@ class SignalingPeer {
         this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection, id, true));
     }
 
-    private internalRemovePeer(id: inet.ConnectionId) {
+    private internalRemovePeer(id: inet.ConnectionId, caller: Boolean) {
         delete this.mConnections[id.id];
-        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.Disconnected, id, null));
+        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.Disconnected,
+            id, caller));
     }
 
     //test this. might cause problems
@@ -583,12 +584,10 @@ class SignalingPeer {
             //find the connection id the other peer uses to talk to this one
             let idOfOther = otherPeer.findPeerConnectionId(this);
 
-            this.internalRemovePeer(connectionId);
-            otherPeer.internalRemovePeer(idOfOther);
-        } else {
-            //the connectionid isn't connected
-            //invalid -> do nothing or log?
+            otherPeer.internalRemovePeer(idOfOther, false);
         }
+
+        this.internalRemovePeer(connectionId, true);
     }
 
     public startServer(address: string) {
