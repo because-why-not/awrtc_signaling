@@ -46,7 +46,16 @@ export class Client extends EventTarget
 
   disconnect(connectionId: ConnectionId)
   {
-    this.#send(NetEventType.Disconnected, connectionId)
+    if(this.#disconnect == null)
+    {
+      this.#send(NetEventType.Disconnected, connectionId)
+
+      this.#disconnect = new Promise(resolve =>
+        this.#disconnect_resolve = resolve
+      )
+    }
+
+    return this.#disconnect
   }
 
   getVersion()
@@ -61,21 +70,18 @@ export class Client extends EventTarget
     return this.#version
   }
 
-  heartbeat(NetEventType.MetaHeartbeat)
+  heartbeat()
   {
     if(this.#heartbeat == null)
     {
       this.#send(NetEventType.MetaHeartbeat)
 
-      this.#heartbeat = new Promise(resolve => this.#heartbeat_resolve = resolve)
+      this.#heartbeat = new Promise(resolve =>
+        this.#heartbeat_resolve = resolve
+      )
     }
 
     return this.#heartbeat
-  }
-
-  newConnection(connectionId: ConnectionId, address: string)
-  {
-    this.#send(NetEventType.NewConnection, connectionId, address)
   }
 
   sendReliableMessage(connectionId: ConnectionId, messageData: Uint8Array)
@@ -88,14 +94,53 @@ export class Client extends EventTarget
     this.#send(NetEventType.UnreliableMessageReceived, connectionId, messageData)
   }
 
-  serverClose()
+
+  //
+  // IBasicNetwork
+  //
+
+  Connect(connectionId: ConnectionId, address: string)
   {
-    this.#send(NetEventType.ServerClosed)
+    if(this.#newConnection == null)
+    {
+      this.#send(NetEventType.NewConnection, connectionId, address)
+
+      this.#newConnection = new Promise((resolve, reject) => {
+        this.#newConnection_resolve = resolve
+        this.#newConnection_reject  = reject
+      })
+    }
+
+    return this.#newConnection
   }
 
-  serverInitialize(address: string)
+  StartServer(address: string)
   {
-    this.#send(NetEventType.ServerInitialized, null, address)
+    if(this.#serverInitialized == null)
+    {
+      this.#send(NetEventType.ServerInitialized, null, address)
+
+      this.#serverInitialized = new Promise((resolve, reject) => {
+        this.#serverInitialized_resolve = resolve
+        this.#serverInitialized_reject  = reject
+      })
+    }
+
+    return this.#serverInitialized
+  }
+
+  StopServer()
+  {
+    if(this.#serverClosed == null)
+    {
+      this.#send(NetEventType.ServerClosed)
+
+      this.#serverClosed = new Promise(resolve =>
+        this.#serverClosed_resolve = resolve
+      )
+    }
+
+    return this.#serverClosed
   }
 
 
@@ -103,8 +148,18 @@ export class Client extends EventTarget
   // Private API
   //
 
+  #disconnect
+  #disconnect_resolve
   #heartbeat
   #heartbeat_resolve
+  #newConnection
+  #newConnection_resolve
+  #newConnection_reject
+  #serverClosed
+  #serverClosed_resolve
+  #serverInitialized
+  #serverInitialized_resolve
+  #serverInitialized_reject
   #version
   #version_resolve
   #ws
@@ -115,58 +170,126 @@ export class Client extends EventTarget
 
   #onMessage = ({data}) =>
   {
-    const networkEvent = NetworkEvent.fromByteArray(data)
+    const {
+      ConnectionId, Info, MessageData, RawData, Type
+    } = NetworkEvent.fromByteArray(data)
 
-    const type = networkEvent.Type
-    switch(type)
+    let error, typeArg
+
+    switch(Type)
     {
       case NetEventType.UnreliableMessageReceived:
-
+      case NetEventType.ReliableMessageReceived:
       break
 
-      case NetEventType.ReliableMessageReceived:
+      case NetEventType.ServerInitialized:
+        if(!this.#serverInitialized_resolve)
+          error = true
 
+        else
+        {
+          this.#serverInitialized_resolve(RawData)
+
+          this.#serverInitialized = null
+          this.#serverInitialized_resolve = null
+          this.#serverInitialized_reject = null
+        }
       break
 
       case NetEventType.ServerInitFailed:
+        if(!this.#serverInitialized_reject)
+          error = true
 
+        else
+        {
+          this.#serverInitialized_reject(RawData)
+
+          this.#serverInitialized = null
+          this.#serverInitialized_resolve = null
+          this.#serverInitialized_reject = null
+        }
       break
 
       case NetEventType.ServerClosed:
+        if(!this.#serverClosed_resolve)
+          error = true
 
+        else
+        {
+          this.#serverClosed_resolve()
+
+          this.#serverClosed = null
+          this.#serverClosed_resolve = null
+        }
       break
 
       case NetEventType.NewConnection:
+        if(RawData)
+        {
+          typeArg = 'NewConnection'
 
+          break
+        }
+
+        if(!this.#newConnection_resolve)
+          error = true
+
+        else
+        {
+          this.#newConnection_resolve(RawData)
+
+          this.#newConnection = null
+          this.#newConnection_resolve = null
+          this.#newConnection_reject = null
+        }
       break
 
       case NetEventType.ConnectionFailed:
+        if(!this.#newConnection_reject)
+          error = true
 
+        else
+        {
+          this.#newConnection_reject()
+
+          this.#newConnection = null
+          this.#newConnection_resolve = null
+          this.#newConnection_reject = null
+        }
       break
 
       case NetEventType.Disconnected:
+        if(RawData)
+        {
+          typeArg = 'Disconnected'
 
+          break
+        }
+
+        if(!this.#disconnect_resolve)
+          error = true
+
+        else
+        {
+          this.#disconnect_resolve()
+
+          this.#disconnect = null
+          this.#disconnect_resolve = null
+        }
       break
 
       case NetEventType.MetaVersion:
-        const {RawData} = networkEvent
-
         if(!this.#version)
           this.#version = Promise.resolve(RawData)
 
-        else if(this.#version_resolve)
+        else if(!this.#version_resolve)
+          error = new Error(`Unexpected ${Type} message: '${RawData}'`)
+
+        else
         {
           this.#version_resolve(RawData)
 
           this.#version_resolve = null
-        }
-
-        else
-        {
-          const event = new Event('error')
-          event.error = new Error(`Unexpected version message: '${RawData}'`)
-
-          return this.dispatchEvent(event)
         }
       break
 
@@ -189,13 +312,19 @@ export class Client extends EventTarget
         return
 
       default:
-        const event = new Event('error')
-        event.error = new Error(`Unexpected network message type: '${type}'`)
-
-        return this.dispatchEvent(event)
+        error = new Error(`Unexpected message type: '${Type}'`)
     }
 
-    const event = new Event(NetEventType[type])
+    if(error === true)
+      error = new Error(`Unexpected ${Type} message: '${Info}'`)
+
+    const event = new Event(error ? 'error' : (typeArg || NetEventType[Type]))
+    event.error = error
+
+    event.ConnectionId = ConnectionId
+    event.Info         = Info
+    event.MessageData  = MessageData
+    event.RawData      = RawData
 
     this.dispatchEvent(event)
   }
