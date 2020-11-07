@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /*
 Copyright (c) 2019, because-why-not.com Limited
 All rights reserved.
