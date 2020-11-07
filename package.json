@@ -2,7 +2,6 @@
   "name": "awrtc_signaling",
   "version": "0.984.0",
   "description": "Default ws based signaling server for awrtc_browser and the unity asset WebRtcVideoChat",
-  "main": "out/server.js",
   "scripts": {
     "build": "tsc && chmod +x server.js",
     "prepare": "npm run build"

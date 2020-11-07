@@ -1,6 +1,7 @@
 .env.json
+client.ts
 server.ts
+index.ts
 INetwork.ts
 tsconfig.json
-WebsocketNetworkServer.ts
 *.tgz

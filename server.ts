@@ -38,7 +38,7 @@ const finalhandler = require('finalhandler');
 import serveStatic = require('serve-static');
 import ws = require('ws');
 
-import * as wns from './WebsocketNetworkServer';
+import * as wns from '.';
 var config = require("./.env.json");
 
 

@@ -61,6 +61,9 @@ typings/
 # next.js build output
 .next
 
-*.js
+client.js
+index.js
+INetwork.js
+server.js
 *.js.map
 *.d.ts
