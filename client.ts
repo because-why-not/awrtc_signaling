@@ -195,7 +195,7 @@ export class Client extends EventTarget
       ConnectionId, Info, MessageData, RawData, Type
     } = NetworkEvent.fromByteArray(data)
 
-    let error, typeArg
+    let error
 
     switch(Type)
     {
@@ -204,114 +204,108 @@ export class Client extends EventTarget
       break
 
       case NetEventType.ServerInitialized:
-        if(!this.#serverInitialized_resolve)
-          error = true
-
-        else
+        if(this.#serverInitialized_resolve)
         {
           this.#serverInitialized_resolve(RawData)
 
           this.#serverInitialized = null
           this.#serverInitialized_resolve = null
           this.#serverInitialized_reject = null
+
+          return
         }
+
+        error = true
       break
 
       case NetEventType.ServerInitFailed:
-        if(!this.#serverInitialized_reject)
-          error = true
-
-        else
+        if(this.#serverInitialized_reject)
         {
           this.#serverInitialized_reject(RawData)
 
           this.#serverInitialized = null
           this.#serverInitialized_resolve = null
           this.#serverInitialized_reject = null
+
+          return
         }
+
+        error = true
       break
 
       case NetEventType.ServerClosed:
-        if(!this.#serverClosed_resolve)
-          error = true
-
-        else
+        if(this.#serverClosed_resolve)
         {
           this.#serverClosed_resolve()
 
           this.#serverClosed = null
           this.#serverClosed_resolve = null
+
+          return
         }
+
+        error = true
       break
 
       case NetEventType.NewConnection:
-        if(RawData)
-        {
-          typeArg = 'NewConnection'
+        if(RawData) break
 
-          break
-        }
-
-        if(!this.#newConnection_resolve)
-          error = true
-
-        else
+        if(this.#newConnection_resolve)
         {
           this.#newConnection_resolve(RawData)
 
           this.#newConnection = null
           this.#newConnection_resolve = null
           this.#newConnection_reject = null
+
+          return
         }
+
+        error = true
       break
 
       case NetEventType.ConnectionFailed:
-        if(!this.#newConnection_reject)
-          error = true
-
-        else
+        if(this.#newConnection_reject)
         {
           this.#newConnection_reject()
 
           this.#newConnection = null
           this.#newConnection_resolve = null
           this.#newConnection_reject = null
+
+          return
         }
+
+        error = true
       break
 
       case NetEventType.Disconnected:
-        if(RawData)
-        {
-          typeArg = 'Disconnected'
+        if(RawData) break
 
-          break
-        }
-
-        if(!this.#disconnect_resolve)
-          error = true
-
-        else
+        if(this.#disconnect_resolve)
         {
           this.#disconnect_resolve()
 
           this.#disconnect = null
           this.#disconnect_resolve = null
+
+          return
         }
+
+        error = true
       break
 
       case NetEventType.MetaVersion:
-        if(!this.#version)
-          this.#version = Promise.resolve(RawData)
-
-        else if(!this.#version_resolve)
-          error = new Error(`Unexpected ${Type} message: '${RawData}'`)
-
-        else
+        if(this.#version_resolve)
         {
           this.#version_resolve(RawData)
 
           this.#version_resolve = null
+
+          return
         }
+
+        error = new Error(`Unexpected ${Type} message: '${RawData}'`)
       break
 
       case NetEventType.MetaHeartbeat:
@@ -339,7 +333,7 @@ export class Client extends EventTarget
     if(error === true)
       error = new Error(`Unexpected ${Type} message: '${Info}'`)
 
-    const event = new ClientEvent(typeArg || NetEventType[Type], error,
+    const event = new ClientEvent(NetEventType[Type], error,
       ConnectionId, Info, MessageData, RawData)
 
     this.dispatchEvent(event)
@@ -352,3 +346,5 @@ export class Client extends EventTarget
     this.#ws.send(NetworkEvent.toByteArray(new NetworkEvent(type, conId, data)))
   }
 }
+
+export default Client
