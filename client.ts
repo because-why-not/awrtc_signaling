@@ -248,11 +248,11 @@ export class Client extends EventTarget
       break
 
       case NetEventType.NewConnection:
-        if(RawData) break
+        if(!RawData) break
 
         if(this.#newConnection_resolve)
         {
-          this.#newConnection_resolve(RawData)
+          this.#newConnection_resolve()
 
           this.#newConnection = null
           this.#newConnection_resolve = null
