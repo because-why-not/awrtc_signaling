@@ -34,10 +34,84 @@ class ClientEvent extends Event
   {
     super(error ? 'error' : type)
 
+    this.connectionId = connectionId
     this.error = error
     this.info = info
     this.messageData = messageData
     this.rawData = rawData
+  }
+}
+
+/**
+ * Class representing a close event.
+ *
+ * @extends Event
+ * @private
+ */
+class CloseEvent extends Event {
+  code
+  reason
+  wasClean
+
+  /**
+   * Create a new `CloseEvent`.
+   *
+   * @param {Number} code The status code explaining why the connection is being
+   *     closed
+   * @param {String} reason A human-readable string explaining why the
+   *     connection is closing
+   * @param {WebSocket} target A reference to the target to which the event was
+   *     dispatched
+   */
+  constructor(code, reason, target) {
+    super('close');
+
+    this.wasClean = target._closeFrameReceived && target._closeFrameSent;
+    this.reason = reason;
+    this.code = code;
+  }
+}
+
+/**
+ * Class representing an open event.
+ *
+ * @extends Event
+ * @private
+ */
+class OpenEvent extends Event {
+  /**
+   * Create a new `OpenEvent`.
+   *
+   * @param {WebSocket} target A reference to the target to which the event was
+   *     dispatched
+   */
+  constructor(target) {
+    super('open');
+  }
+}
+
+/**
+ * Class representing an error event.
+ *
+ * @extends Event
+ * @private
+ */
+class ErrorEvent extends Event {
+  error
+  message
+
+  /**
+   * Create a new `ErrorEvent`.
+   *
+   * @param {Object} error The error that generated this event
+   * @param {WebSocket} target A reference to the target to which the event was
+   *     dispatched
+   */
+  constructor(error, target) {
+    super('error');
+
+    this.message = error.message;
+    this.error = error;
   }
 }
 
@@ -52,10 +126,10 @@ export class Client extends EventTarget
 
     ws.binaryType = 'arraybuffer'
 
-    ws.addEventListener('close', this.#onClose, {once: true})
-    ws.addEventListener('error', this.#onError)
-    ws.addEventListener('message', this.#onMessage)
-    ws.addEventListener('open', this.#onOpen, {once: true})
+    ws.once('close'  , this.#onClose)
+    ws.on  ('error'  , this.#onError)
+    ws.on  ('message', this.#onMessage)
+    ws.once('open'   , this.#onOpen)
 
     this.#ws = ws
   }
@@ -185,11 +259,13 @@ export class Client extends EventTarget
   #version_resolve
   #ws
 
-  #onClose = this.dispatchEvent.bind(this)
-  #onError = this.dispatchEvent.bind(this)
-  #onOpen  = this.dispatchEvent.bind(this)
+  #onClose = (code, reason) =>
+    this.dispatchEvent(new CloseEvent(code, reason, this.#ws))
+  #onError = error =>
+    this.dispatchEvent(new ErrorEvent(error, this.#ws))
+  #onOpen = () => this.dispatchEvent(new OpenEvent(this.#ws))
 
-  #onMessage = ({data}) =>
+  #onMessage = data =>
   {
     const {
       ConnectionId, Info, MessageData, RawData, Type
