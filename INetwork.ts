@@ -116,7 +116,7 @@ export class NetworkEvent {
         output += "NetEventType: (";
         output += NetEventType[this.type];
         output += "), id: (";
-        output += this.connectionId.id;
+        output += this.connectionId?.id;
         output += "), Data: (";
         if (typeof this.data == "string") {
             output += this.data;
@@ -196,7 +196,7 @@ export class NetworkEvent {
         result[1] = dataType;
 
         let conIdField = new Int16Array(result.buffer, result.byteOffset + 2, 1);
-        conIdField[0] = evt.connectionId.id;
+        conIdField[0] = evt.connectionId?.id;
 
         if (dataType == NetEventDataType.ByteArray) {
             let byteArray: Uint8Array = evt.data;
