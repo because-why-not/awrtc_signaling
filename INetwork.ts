@@ -135,9 +135,10 @@ export class NetworkEvent {
         //buffers -> make sure it is a Uint8Array
         let arr : Uint8Array = new Uint8Array(arrin)
 
+        console.debug('fromByteArray arr:', arr)
+
         let type: NetEventType = arr[0]; //byte
         let dataType: NetEventDataType = arr[1]; //byte
-        let id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
 
         let conId: ConnectionId = null;
         let data: any = null;
@@ -147,12 +148,17 @@ export class NetworkEvent {
 
         else if (type != NetEventType.MetaHeartbeat)
         {
-            let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
+            const id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
+            conId = new ConnectionId(id);
 
             if (dataType == NetEventDataType.ByteArray) {
+                let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
                 let byteArray = new Uint8Array(arr.buffer, arr.byteOffset + 8, length);
                 data = byteArray;
-            } else if (dataType == NetEventDataType.UTF16String) {
+            }
+
+            else if (dataType == NetEventDataType.UTF16String) {
+                let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
                 let uint16Arr = new Uint16Array(arr.buffer, arr.byteOffset + 8, length);
 
                 let str: string = "";
@@ -160,20 +166,20 @@ export class NetworkEvent {
                     str += String.fromCharCode(uint16Arr[i]);
                 }
                 data = str;
-            } else if (dataType == NetEventDataType.Null) {
-                //message has no data
             }
-            else
-                throw new Error('Message has an invalid data type flag: ' + dataType);
 
-            conId = new ConnectionId(id);
+            else if (dataType != NetEventDataType.Null)
+                throw new Error('Message has an invalid data type flag: ' + dataType);
         }
 
         let result: NetworkEvent = new NetworkEvent(type, conId, data);
+        console.debug('fromByteArray result:', result)
         return result;
     }
 
     public static toByteArray(evt: NetworkEvent): Uint8Array {
+        console.debug('toByteArray evt:', evt)
+
         let dataType: NetEventDataType;
         let length = 4; //4 bytes are always needed
 
@@ -183,7 +189,7 @@ export class NetworkEvent {
         } else if (typeof evt.data == "string") {
             dataType = NetEventDataType.UTF16String;
             let str: string = evt.data;
-            length += str.length * 2 + 4;
+            length += 4 + str.length * 2;
         } else {
             dataType = NetEventDataType.ByteArray;
             let byteArray: Uint8Array = evt.data;
@@ -192,7 +198,7 @@ export class NetworkEvent {
 
         //creating the byte array
         let result = new Uint8Array(length);
-        result[0] = evt.type;;
+        result[0] = evt.type;
         result[1] = dataType;
 
         let conIdField = new Int16Array(result.buffer, result.byteOffset + 2, 1);
@@ -215,6 +221,8 @@ export class NetworkEvent {
                 dataField[i] = str.charCodeAt(i);
             }
         }
+
+        console.debug('toByteArray result:', result)
         return result;
     }
 }

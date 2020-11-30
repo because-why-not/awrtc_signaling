@@ -99,10 +99,10 @@ export class WebsocketNetworkServer {
         for(let i = 0; i < appConfigs.length; i++)
         {
             let app = appConfigs[i];
-            if ((app.path in this.mPool) == false) {
-                console.log("Add new pool " + app.path);
-                this.mPool[app.path] = new PeerPool(app);
-            }
+            if (app.path in this.mPool) continue
+
+            console.log("Add new pool " + app.path);
+            this.mPool[app.path] = new PeerPool(app);
         };
 
         websocketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) =>
@@ -315,9 +315,8 @@ class SignalingPeer {
     private doPing() {
         if (this.mState == SignalingConnectionState.Connected && this.mEndPoint.ws.readyState == WebSocket.OPEN)
         {
-            if (this.mPongReceived == false) {
-                this.NoPongTimeout();
-                return;
+            if (!this.mPongReceived) {
+                return this.NoPongTimeout();
             }
             this.mPongReceived = false;
             this.mEndPoint.ws.ping();
@@ -523,7 +522,7 @@ class SignalingPeer {
     private internalRemovePeer(id: inet.ConnectionId, caller: Boolean) {
         delete this.mConnections[id.id];
         this.sendToClient(new inet.NetworkEvent(inet.NetEventType.Disconnected,
-            id, caller));
+            id, caller ? new Uint8Array() : null));
     }
 
     //test this. might cause problems
@@ -584,7 +583,7 @@ class SignalingPeer {
     public disconnect(connectionId: inet.ConnectionId) {
         var otherPeer = this.mConnections[connectionId.id];
 
-        if (otherPeer != null) {
+        if (otherPeer) {
             //find the connection id the other peer uses to talk to this one
             let idOfOther = otherPeer.findPeerConnectionId(this);
 
@@ -596,8 +595,7 @@ class SignalingPeer {
 
     public startServer(address: string) {
         //what to do if it is already a server?
-        if (this.mServerAddress != null)
-            this.stopServer();
+        if (this.mServerAddress) this.stopServer();
 
         if (this.mConnectionPool.isAddressAvailable(address)) {
             this.mServerAddress = address;
