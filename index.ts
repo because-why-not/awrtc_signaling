@@ -516,7 +516,8 @@ class SignalingPeer {
         this.mConnections[id.id] = peer;
 
         //event to this (the other peer gets the event via addOutgoing
-        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection, id, true));
+        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection,
+            id, new Uint8Array()));
     }
 
     private internalRemovePeer(id: inet.ConnectionId, caller: Boolean) {
