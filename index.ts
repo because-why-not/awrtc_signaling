@@ -506,7 +506,8 @@ class SignalingPeer {
         this.mConnections[id.id] = peer;
 
         //event to this (the other peer gets the event via addOutgoing
-        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection, id, null));
+        this.sendToClient(new inet.NetworkEvent(inet.NetEventType.NewConnection,
+            id, null));
     }
 
     private internalAddOutgoingPeer(peer: SignalingPeer, id: inet.ConnectionId): void {
@@ -632,7 +633,9 @@ class SignalingPeer {
 
     public sendData(id: inet.ConnectionId, msg: any, reliable: boolean) {
         let peer = this.mConnections[id.id];
-        if(peer != null)
+        if(peer)
             peer.forwardMessage(this, msg, reliable);
+
+        // TODO notify to sender when destination doesn't exists
     }
 }
