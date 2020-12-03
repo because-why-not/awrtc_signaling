@@ -330,7 +330,7 @@ class SignalingPeer {
         output += "NetEventType: (";
         output += inet.NetEventType[evt.Type];
         output += "), id: (";
-        output += evt.ConnectionId.id;
+        output += evt.ConnectionId?.id;
         if (evt.Info != null) {
             output += "), Data: (";
             output += evt.Info;

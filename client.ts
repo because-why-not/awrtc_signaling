@@ -356,7 +356,7 @@ export class Client extends EventTarget
       break
 
       case NetEventType.Disconnected:
-        if(RawData) break
+        if(!RawData) break
 
         if(this.#disconnect_resolve)
         {
