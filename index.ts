@@ -355,8 +355,9 @@ class SignalingPeer {
             let msg = inmessage as Uint8Array;
             this.parseMessage(msg);
         } catch (err) {
-            WebsocketNetworkServer.logv(this.GetLogPrefix() +" Invalid message received: "
-            + inmessage + "  \n Error: " + err);
+            WebsocketNetworkServer.logv(this.GetLogPrefix() +
+                " Invalid message received: " + inmessage +
+                "\n Error: " + err);
         }
     }
 
@@ -495,6 +496,8 @@ class SignalingPeer {
             this.sendData(evt.ConnectionId, evt.MessageData, true);
         } else if (evt.Type == inet.NetEventType.UnreliableMessageReceived) {
             this.sendData(evt.ConnectionId, evt.MessageData, false);
+        } else {
+            console.warn("[parseMessage] Unknown event message:", evt);
         }
     }
 
@@ -602,14 +605,16 @@ class SignalingPeer {
         if (this.mConnectionPool.isAddressAvailable(address)) {
             this.mServerAddress = address;
             this.mConnectionPool.addServer(this, address);
-            this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ServerInitialized, inet.ConnectionId.INVALID, address));
+            this.sendToClient(new inet.NetworkEvent(
+                inet.NetEventType.ServerInitialized, inet.ConnectionId.INVALID, address));
 
             if (this.mConnectionPool.hasAddressSharing()) {
                 //address sharing is active. connect to every endpoint already listening on this address
                 this.connectJoin(address);
             }
         } else {
-            this.sendToClient(new inet.NetworkEvent(inet.NetEventType.ServerInitFailed, inet.ConnectionId.INVALID, address));
+            this.sendToClient(new inet.NetworkEvent(
+                inet.NetEventType.ServerInitFailed, inet.ConnectionId.INVALID, address));
         }
     }
 
@@ -635,6 +640,8 @@ class SignalingPeer {
         let peer = this.mConnections[id.id];
         if(peer)
             peer.forwardMessage(this, msg, reliable);
+        else
+            console.warn("[sendData] destination doesn't exists:", id.id);
 
         // TODO notify to sender when destination doesn't exists
     }
