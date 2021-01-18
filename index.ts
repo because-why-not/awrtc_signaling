@@ -175,11 +175,9 @@ class PeerPool {
     //returns true in the following cases
     //the address is shorter than the maxAddressLength and the server address is not yet in use or address sharing is active
     public isAddressAvailable(address: string): boolean{
-        if (address.length <= this.maxAddressLength // only allow addresses shorter than maxAddressLength
-            && (this.mServers[address] == null || this.mAddressSharing)) {
-            return true;
-        }
-        return false;
+        return address != null
+            && address.length <= this.maxAddressLength // only allow addresses shorter than maxAddressLength
+            && (this.mServers[address] == null || this.mAddressSharing);
     }
 
     //Adds the server. No checking is performed here! logic should be solely in the connection class
