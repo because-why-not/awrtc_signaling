@@ -381,7 +381,7 @@ export class Client extends EventTarget
           return
         }
 
-        error = new Error(`Unexpected ${Type} message: '${RawData}'`)
+        error = true
       break
 
       case NetEventType.MetaHeartbeat:
@@ -407,7 +407,7 @@ export class Client extends EventTarget
     }
 
     if(error === true)
-      error = new Error(`Unexpected ${Type} message: '${Info}'`)
+      error = new Error(`Unexpected ${NetEventType[Type]} message: '${RawData}'`)
 
     const event = new ClientEvent(NetEventType[Type], error,
       ConnectionId, Info, MessageData, RawData)
