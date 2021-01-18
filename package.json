@@ -18,6 +18,9 @@
     "WebRtcVideoChat"
   ],
   "author": "Christoph Kutza",
+  "contributors": [
+    "Jesús Leganés-Combarro 'piranna' <piranna@gmail.com>"
+  ],
   "email": "contact@because-why-not.com",
   "license": "BSD-3-Clause",
   "bugs": {
