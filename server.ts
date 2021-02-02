@@ -1,4 +1,5 @@
-﻿/*
+#!/usr/bin/env node
+/*
 Copyright (c) 2019, because-why-not.com Limited
 All rights reserved.
 
@@ -27,17 +28,18 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+import fs = require('fs');
 import * as http from 'http';
 import https = require('https');
 import url = require('url');
-import ws = require('ws');
-import fs = require('fs');
-import * as wns from './WebsocketNetworkServer';
+
+const finalhandler = require('finalhandler');
 import serveStatic = require('serve-static');
-var finalhandler = require('finalhandler');
+import ws = require('ws');
 
-var config = require("./config.json");
-
+import * as wns from '.';
+var config = require("./.env.json");
 
 
 console.log("This app was developed and tested with nodejs v6.9 and v8.9.1. Your current nodejs version: " + process.version)
@@ -45,7 +47,7 @@ console.log("This app was developed and tested with nodejs v6.9 and v8.9.1. Your
 //for backwards compatibility undefined still keeps the verbose log active
 if(typeof config.log_verbose === 'undefined' || config.log_verbose == true)
 {
-    console.log('Using verbose log. This might lower performance. Add "log_verbose": false to config.json to deactivate this.');
+    console.log('Using verbose log. This might lower performance. Add "log_verbose": false to .env.json to deactivate this.');
     wns.WebsocketNetworkServer.SetLogLevel(true);
 }else{
     wns.WebsocketNetworkServer.SetLogLevel(false);
@@ -58,29 +60,28 @@ var env_port = process.env.port || process.env.PORT;
 //handle special cloud service setup
 if(env_port)
 {
-    console.log("The environment variable process.env.port or PORT is set to " + env_port
-    + ". Ports set in config json will be ignored");
+    console.log("The environment variable process.env.port or PORT is set to " +
+                env_port + ". Ports set in config json will be ignored");
 
     //overwrite config ports to use whatever the cloud wants us to
     if(config.httpConfig)
         config.httpConfig.port = env_port;
     if(config.httpsConfig)
         config.httpsConfig.port = env_port;
-    
+
     if(config.httpConfig && config.httpsConfig)
     {
-        //Many cloud provider set process.env.port and don't allow multiple ports 
-        //If this is the case https will be deactivated to avoid a crash due to two services 
-        //trying to use the same port
-        //heroku will actually reroute HTTPS port 443 to regular HTTP on 80 so one port with HTTP is enough
+        // Many cloud provider set process.env.port and don't allow multiple
+        // ports. If this is the case https will be deactivated to avoid a crash
+        // due to two services trying to use the same port. Heroku will actually
+        // reroute HTTPS port 443 to regular HTTP on 80 so one port with HTTP is
+        // enough
         console.warn("Only http/ws will be started as only one port can be set via process.env.port.");
-        console.warn("Remove the httpConfig section in the config.json if you want to use https"
+        console.warn("Remove the httpConfig section in the .env.json if you want to use https"
         +" instead or make sure the PORT variable is not set by you / your provider.");
         delete config.httpsConfig;
     }
 }
-
-
 
 
 //request handler that will deliver files from public directory
@@ -94,12 +95,11 @@ var httpsServer: https.Server = null;
 //this is used to handle regular http  / https requests
 //to allow checking if the server is online
 function defaultRequest(req, res) {
-    console.log("http/https request received");
-    var done = finalhandler(req, res);
-    serve(req, res, done);
-  }
+  console.log("http/https request received");
+  var done = finalhandler(req, res);
+  serve(req, res, done);
+}
 
-  
 
 var signalingServer = new wns.WebsocketNetworkServer();
 
@@ -112,7 +112,7 @@ if (config.httpConfig) {
         port: config.httpConfig.port,
         host: config.httpConfig.host
     }
-    httpServer.listen(options, function () { 
+    httpServer.listen(options, function () {
         console.log('websockets/http listening on ', httpServer.address());
     });
     //perMessageDeflate: false needs to be set to false turning off the compression. if set to true
@@ -127,28 +127,26 @@ if (config.httpConfig) {
     signalingServer.addSocketServer(webSocketServer, config.apps as wns.IAppConfig[]);
 }
 
-
-
 if (config.httpsConfig)
 {
     httpsServer = https.createServer({
         key: fs.readFileSync(config.httpsConfig.ssl_key_file),
         cert: fs.readFileSync(config.httpsConfig.ssl_cert_file)
     }, defaultRequest);
-    
+
     let options = {
         port: config.httpsConfig.port,
         host: config.httpsConfig.host
     }
     httpsServer.listen(options, function () {
         console.log('secure websockets/https listening on ', httpsServer.address());
-        });
+    });
 
     var webSocketSecure = new ws.Server( {
         server: httpsServer,
         //path: app.path,
         maxPayload: config.maxPayload,
         perMessageDeflate: false
-    }); 
+    });
     signalingServer.addSocketServer(webSocketSecure, config.apps as wns.IAppConfig[]);
 }

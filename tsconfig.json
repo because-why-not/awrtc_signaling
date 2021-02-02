@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
-    "noImplicitAny": false,
+    "declaration": true,
+    "esModuleInterop": true,
+    "module": "commonjs",
     "noEmitOnError": true,
+    "noImplicitAny": false,
     "removeComments": false,
     "sourceMap": true,
-    "target": "es5",
-    "module": "commonjs",
-    "declaration": true,
-	"outDir" : "./out"
+    "target": "ES2015"
   },
   "exclude": [
-    "node_modules",
-    "out"
+    "node_modules"
   ]
 }

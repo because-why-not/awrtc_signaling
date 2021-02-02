@@ -56,10 +56,15 @@ typings/
 
 # dotenv environment variables file
 .env
+.env.json
 
 # next.js build output
 .next
 
-out/*.js
-out/*.js.map
-out/*.d.ts
+client.js
+index.js
+INetwork.js
+server.js
+*.js.map
+*.d.ts
+certs/
