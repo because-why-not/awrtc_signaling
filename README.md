@@ -2,6 +2,15 @@
 
 ## Quick Setup
 
+### Using docker
+
+```
+docker build -t <container_name> .
+docker run -tid -p 12776:12776 -p 12777:12777 <container_name>
+```
+
+### Local
+
 To run the server first you need node.js & npm:
 	https://nodejs.org/
 
