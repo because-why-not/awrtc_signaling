@@ -31,12 +31,16 @@ import http = require('http');
 import https = require('https');
 import ws = require('ws');
 import fs = require('fs');
+import url = require('url');
 import * as wns from './WebsocketNetworkServer';
 import serveStatic = require('serve-static');
 import finalhandler = require('finalhandler');
+import { TokenManager } from './TokenManager';
+
 const config = require("../config.json");
 
 console.log("Your current nodejs version: " + process.version)
+
 
 //This contains the actual logic of our signaling server
 const signalingServer = new wns.WebsocketNetworkServer();
@@ -63,6 +67,7 @@ if(env_port)
     //overwrite config ports to use whatever the cloud wants us to
     if(config.httpConfig)
         config.httpConfig.port = env_port;
+
     if(config.httpsConfig)
         config.httpsConfig.port = env_port;
     
@@ -80,6 +85,14 @@ if(env_port)
 }
 
 
+//if adminToken is not a valid value the token manager just acts as a dummy allowing all connections
+let tokenManager = new TokenManager(config.adminToken, config.log_verbose);
+if (tokenManager.isActive()) {
+    console.log("Admin token set in config.json. Connections will be blocked by default unless a valid user token is used.");
+} else {
+    console.log("No admin token set. The server allows all connections.");
+}
+
 
 
 //request handler that will deliver files from public directory
@@ -90,14 +103,24 @@ var serve = serveStatic("./public");
 var httpServer: http.Server = null;
 var httpsServer: https.Server = null;
 
+
+
+
 //this is used to handle regular http / https requests
 //to allow checking if the server is online
-function defaultRequest(req, res) {
-    console.log("http/https request received");
-    //res.setHeader("Access-Control-Allow-Origin", "*"); //allow access from anywhere
-    var done = finalhandler(req, res);
-    serve(req, res, done);
-  }
+function defaultRequest(req: http.IncomingMessage, res: http.ServerResponse) {
+
+    console.log(`Request received from IP: ${req.socket.remoteAddress}:${req.socket.remotePort} to url ${req.url}`);
+    const parsedUrl = url.parse(req.url!, true);
+    const pathname = parsedUrl.pathname;
+    if (pathname === '/api/admin/regUserToken') {
+        tokenManager.processRequest(req, res);
+    } else {
+        //res.setHeader("Access-Control-Allow-Origin", "*"); //allow access from anywhere
+        var done = finalhandler(req, res);
+        serve(req, res, done);
+    }
+}
 
 //Setup http endpoint for ws://
 if (config.httpConfig) {
@@ -106,6 +129,7 @@ if (config.httpConfig) {
         port: config.httpConfig.port,
         host: config.httpConfig.host
     }
+
     httpServer.listen(options, function () { 
         console.log('websockets/http listening on ', httpServer.address());
     });
@@ -117,9 +141,9 @@ if (config.httpConfig) {
         //path: app.path,
         maxPayload: config.maxPayload,
         perMessageDeflate: false
-        });
+    });
     //incoming websocket connections will be handled by signalingServer
-    signalingServer.addSocketServer(webSocketServer, config.apps as wns.IAppConfig[]);
+    signalingServer.addSocketServer(webSocketServer, config.apps as wns.IAppConfig[], tokenManager.checkUserToken);
 }
 
 
@@ -149,5 +173,5 @@ if (config.httpsConfig)
         perMessageDeflate: false
     }); 
     //incoming websocket connections will be handled by signalingServer
-    signalingServer.addSocketServer(webSocketSecure, config.apps as wns.IAppConfig[]);
+    signalingServer.addSocketServer(webSocketSecure, config.apps as wns.IAppConfig[], tokenManager.checkUserToken);
 }

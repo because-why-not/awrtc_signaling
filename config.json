@@ -1,5 +1,6 @@
 {
 	"log_verbose": true,
+    "adminToken" : null,
     "httpConfig":
     {
         "port": 12776,

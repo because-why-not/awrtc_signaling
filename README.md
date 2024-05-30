@@ -115,9 +115,39 @@ https://www.because-why-not.com/webrtc/tutorials-server-side/
 https://because-why-not.com/webrtc/faq/
 
 Other settings:
-* "log_verbose": false deactivates the message log. It is recommeded to have this set to true during development / debugging
+* "log_verbose": false deactivates the message log. It is recommended to have this set to true during development / debugging
 * "maxPayload": 1048576 changes the same setting for http / https server. Mainly to protect the RAM filling up with a single large message
 * "apps": [] a list of apps used with this server. The server will keep the address space separated to avoid connections between different apps
 * app "name": "ChatApp" name of the app. Mostly for debugging
 * app "path": "/callapp" the url used by the app e.g. ws://mydomain.com/callapp
 * app "address_sharing": true  a hack that allows multiple users to use the same address which would otherwise result in an error. All users using the same address are connected to each other
+* adminToken: null allows any connection. Setting a string here requires tokens to connect to the server (see below)
+
+
+
+## Using tokens to restrict access
+
+If you want to restrict access to the signaling server you can set the property adminToken in the config.json to a token of your choice (any string). This will block all
+websocket connections by default unless they have a valid token.
+
+To allow a specific connection you must first register a userToken via a REST API call e.g. with command line tool curl you can register a new user taken "new_user_token" like this:
+
+    curl -X POST -H "Authorization: my_secret_admin_token" -d '{"timeout": 30, "userToken": "new_user_token"}' http://localhost:12776/api/admin/regUserToken
+
+* -X POST sets the http method
+* -H "Authorization: my_secret_admin_token" sets the Authorization header of the request to the adminToken as configured in config.json
+* -d sets the body of the message to the json following
+* JSON property timeout sets the timeout in seconds the token remains active (successive calls with the same token reset the timeout)
+* JSON property userToken sets the user token to "new_user_token"
+
+To use the token the following signaling URL must be used: ws://localhost:12776?userToken=new_user_token
+After 30 seconds any existing websocket connection remains open but no new connections are accepted.
+
+Make sure to always use https and wss for production.
+
+
+
+
+
+
+

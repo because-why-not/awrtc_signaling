@@ -104,7 +104,7 @@ export class WebsocketNetworkServer {
      * Apps can be given multiple times with different signaling servers to support different
      * ports and protocols.
      */
-    public addSocketServer(websocketServer: WebSocket.Server, appConfigs: IAppConfig[]): void {
+    public addSocketServer(websocketServer: WebSocket.Server, appConfigs: IAppConfig[], checkUserToken: (request: http.IncomingMessage)=>boolean): void {
         for(let i = 0; i < appConfigs.length; i++)
         {
             let app = appConfigs[i];
@@ -117,6 +117,10 @@ export class WebsocketNetworkServer {
         
         websocketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) => 
         {
+            if (checkUserToken(request) == false) {
+                socket.close(1008, "Invalid token");
+                return;
+            }
             let ep = new Endpoint();
             ep.ws = socket;
             ep.remoteAddress = request.socket.remoteAddress;
@@ -127,8 +131,10 @@ export class WebsocketNetworkServer {
             
             if(ep.appPath in this.mPool)
             {
-                if(WebsocketNetworkServer.sVerboseLog)
+                if (WebsocketNetworkServer.sVerboseLog)
+                {
                     console.log("New websocket connection:" + ep.getConnectionInfo());
+                }
                 this.onConnection(ep);
             }else{
                 
