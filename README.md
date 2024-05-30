@@ -22,8 +22,7 @@ After installing run the following commands:
     npm run build
     
     #run the server
-    cd out
-    node server.js
+    npm start
            
 The app should print the following lines (or similar) once ready to receive connections:
 
