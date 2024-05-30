@@ -4,10 +4,10 @@
     "noEmitOnError": true,
     "removeComments": false,
     "sourceMap": true,
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
     "declaration": true,
-	"outDir" : "./out"
+	  "outDir" : "./out"
   },
   "exclude": [
     "node_modules",

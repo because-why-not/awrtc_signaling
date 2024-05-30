@@ -3,12 +3,12 @@
     "httpConfig":
     {
         "port": 12776,
-        "host": "0.0.0.0"
+        "host": "::"
     },
     "httpsConfig":
     {
         "port": 12777,
-        "host": "0.0.0.0",
+        "host": "::",
         "ssl_key_file": "ssl.key",
         "ssl_cert_file": "ssl.crt"
     },

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2019, because-why-not.com Limited
+Copyright (c) 2024, because-why-not.com Limited
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -257,7 +257,7 @@ class SignalingPeer {
 
     private mServerAddress: string;
 
-    private mPingInterval: NodeJS.Timer;
+    private mPingInterval: NodeJS.Timeout;
 
     /**false = We are waiting for a pong. If it
      * stays false until the next ping interval 

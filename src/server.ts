@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2019, because-why-not.com Limited
+Copyright (c) 2024, because-why-not.com Limited
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,20 +27,19 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-import * as http from 'http';
+import http = require('http');
 import https = require('https');
-import url = require('url');
 import ws = require('ws');
 import fs = require('fs');
 import * as wns from './WebsocketNetworkServer';
 import serveStatic = require('serve-static');
-var finalhandler = require('finalhandler');
+import finalhandler = require('finalhandler');
+const config = require("../config.json");
 
-var config = require("./config.json");
+console.log("Your current nodejs version: " + process.version)
 
-
-
-console.log("This app was developed and tested with nodejs v6.9 and v8.9.1. Your current nodejs version: " + process.version)
+//This contains the actual logic of our signaling server
+const signalingServer = new wns.WebsocketNetworkServer();
 
 //for backwards compatibility undefined still keeps the verbose log active
 if(typeof config.log_verbose === 'undefined' || config.log_verbose == true)
@@ -87,25 +86,20 @@ if(env_port)
 //can be used like a simple http / https webserver
 var serve = serveStatic("./public");
 
-//setup
+//setup http/https endpoints
 var httpServer: http.Server = null;
 var httpsServer: https.Server = null;
 
-//this is used to handle regular http  / https requests
+//this is used to handle regular http / https requests
 //to allow checking if the server is online
 function defaultRequest(req, res) {
     console.log("http/https request received");
+    //res.setHeader("Access-Control-Allow-Origin", "*"); //allow access from anywhere
     var done = finalhandler(req, res);
     serve(req, res, done);
   }
 
-  
-
-var signalingServer = new wns.WebsocketNetworkServer();
-
-//const webSocketServer = new ws.Server({ port: 12776 });
-//signalingServer.addSocketServer(webSocketServer, config.apps);
-
+//Setup http endpoint for ws://
 if (config.httpConfig) {
     httpServer = http.createServer(defaultRequest);
     let options = {
@@ -123,14 +117,18 @@ if (config.httpConfig) {
         //path: app.path,
         maxPayload: config.maxPayload,
         perMessageDeflate: false
-    });
+        });
+    //incoming websocket connections will be handled by signalingServer
     signalingServer.addSocketServer(webSocketServer, config.apps as wns.IAppConfig[]);
 }
 
 
 
+//Setup https endpoint for wss://
 if (config.httpsConfig)
 {
+    //load SSL files. If this crashes check the congig.json and make sure the files
+    //are at the correct location
     httpsServer = https.createServer({
         key: fs.readFileSync(config.httpsConfig.ssl_key_file),
         cert: fs.readFileSync(config.httpsConfig.ssl_cert_file)
@@ -142,7 +140,7 @@ if (config.httpsConfig)
     }
     httpsServer.listen(options, function () {
         console.log('secure websockets/https listening on ', httpsServer.address());
-        });
+    });
 
     var webSocketSecure = new ws.Server( {
         server: httpsServer,
@@ -150,5 +148,6 @@ if (config.httpsConfig)
         maxPayload: config.maxPayload,
         perMessageDeflate: false
     }); 
+    //incoming websocket connections will be handled by signalingServer
     signalingServer.addSocketServer(webSocketSecure, config.apps as wns.IAppConfig[]);
 }
