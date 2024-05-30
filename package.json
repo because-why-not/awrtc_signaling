@@ -7,8 +7,7 @@
     "tsc": "tsc",
     "build": "tsc",
     "start": "node out/server.js",
-    "watch": "tsc --watch",
-    "postinstall": "npm run build"
+    "watch": "tsc --watch"
   },
   "repository": {
     "type": "git",
