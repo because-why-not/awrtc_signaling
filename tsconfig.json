@@ -7,10 +7,15 @@
     "target": "es6",
     "module": "commonjs",
     "declaration": true,
-	  "outDir" : "./out"
+	  "outDir" : "./out",
+    "esModuleInterop" : true,
+    "allowSyntheticDefaultImports": true,
   },
   "exclude": [
     "node_modules",
     "out"
+  ],
+  "include": [
+    "src/**/*.ts"
   ]
 }

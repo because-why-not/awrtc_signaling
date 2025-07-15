@@ -34,11 +34,11 @@
             "address_sharing": true
         },
         {
-            "name": "UnitTests",
+            "name": "AutomatedTest",
             "path": "/test"
         },
         {
-            "name": "UnitTestsAddressSharing",
+            "name": "AutomatedTestShared",
             "path": "/testshared",
             "address_sharing": true
         }

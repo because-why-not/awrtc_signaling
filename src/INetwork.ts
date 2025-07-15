@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * the C# implementation.
  */
 
- 
+
 
 export enum NetEventType {
     Invalid = 0,
@@ -162,13 +162,13 @@ export class NetworkEvent {
     public static fromByteArray(arrin: Uint8Array): NetworkEvent {
         //old node js versions seem to not return proper Uint8Arrays but
         //buffers -> make sure it is a Uint8Array
-        let arr : Uint8Array = new Uint8Array(arrin)
+        let arr: Uint8Array = new Uint8Array(arrin)
 
         let type: NetEventType = arr[0]; //byte
         let dataType: NetEventDataType = arr[1]; //byte
         let id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
 
-        
+
         let data: any = null;
         if (dataType == NetEventDataType.ByteArray) {
 
@@ -189,8 +189,7 @@ export class NetworkEvent {
         } else if (dataType == NetEventDataType.Null) {
             //message has no data
         }
-        else
-        {
+        else {
             throw new Error('Message has an invalid data type flag: ' + dataType);
         }
 

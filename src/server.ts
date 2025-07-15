@@ -1,85 +1,64 @@
-﻿/*
-Copyright (c) 2024, because-why-not.com Limited
-All rights reserved.
+﻿import http from 'http';
+import https from 'https';
+import ws from 'ws';
+import fs from 'fs';
+import url from 'url';
+import serveStatic from 'serve-static';
+import finalhandler from 'finalhandler';
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-import http = require('http');
-import https = require('https');
-import ws = require('ws');
-import fs = require('fs');
-import url = require('url');
 import * as wns from './WebsocketNetworkServer';
-import serveStatic = require('serve-static');
-import finalhandler = require('finalhandler');
 import { TokenManager } from './TokenManager';
+import { AppConfig, ServerConfig, validatePort } from './ServerConfig';
+import { DefaultPeerPool } from './PeerPool';
 
-const config = require("../config.json");
+import { ILogger, SLogger } from './Logger';  
 
-console.log("Your current nodejs version: " + process.version)
+const logger = new SLogger("sig");
+
+const config: ServerConfig = require("../config.json");
+
+logger.info("Your current nodejs version: " + process.version)
+
+//for backwards compatibility undefined still keeps the verbose log active
+if (typeof config.log_verbose === 'undefined' || config.log_verbose == true) {
+    logger.log('Using verbose log. This might lower performance. Add "log_verbose": false to config.json to deactivate this.');
+    logger.setLogLevel(true);
+} else {
+    logger.setLogLevel(false);
+}
 
 
 //This contains the actual logic of our signaling server
-const signalingServer = new wns.WebsocketNetworkServer();
+const signalingServer = new wns.WebsocketNetworkServer(logger);
 
-//for backwards compatibility undefined still keeps the verbose log active
-if(typeof config.log_verbose === 'undefined' || config.log_verbose == true)
-{
-    console.log('Using verbose log. This might lower performance. Add "log_verbose": false to config.json to deactivate this.');
-    wns.WebsocketNetworkServer.SetLogLevel(true);
-}else{
-    wns.WebsocketNetworkServer.SetLogLevel(false);
-}
+config.apps.forEach((app) => {
+    signalingServer.addPeerPool(app.path, new DefaultPeerPool(app, logger.createSub(app.path)));
+})
 
 //azure uses port
 //heroku uses PORT
 var env_port = process.env.port || process.env.PORT;
 
 //handle special cloud service setup
-if(env_port)
-{
-    console.log("The environment variable process.env.port or PORT is set to " + env_port
-    + ". Ports set in config json will be ignored");
+if (env_port) {
+    logger.log("The environment variable process.env.port or PORT is set to " + env_port
+        + ". Ports set in config json will be ignored");
 
     //overwrite config ports to use whatever the cloud wants us to
-    if(config.httpConfig)
-        config.httpConfig.port = env_port;
+    if (config.httpConfig)
+        config.httpConfig.port = validatePort(env_port);
 
-    if(config.httpsConfig)
-        config.httpsConfig.port = env_port;
-    
-    if(config.httpConfig && config.httpsConfig)
-    {
+    if (config.httpsConfig)
+        config.httpsConfig.port = validatePort(env_port);
+
+    if (config.httpConfig && config.httpsConfig) {
         //Many cloud provider set process.env.port and don't allow multiple ports 
         //If this is the case https will be deactivated to avoid a crash due to two services 
         //trying to use the same port
         //heroku will actually reroute HTTPS port 443 to regular HTTP on 80 so one port with HTTP is enough
-        console.warn("Only http/ws will be started as only one port can be set via process.env.port.");
-        console.warn("Remove the httpConfig section in the config.json if you want to use https"
-        +" instead or make sure the PORT variable is not set by you / your provider.");
+        logger.warn("Only http/ws will be started as only one port can be set via process.env.port.");
+        logger.warn("Remove the httpConfig section in the config.json if you want to use https"
+            + " instead or make sure the PORT variable is not set by you / your provider.");
         delete config.httpsConfig;
     }
 }
@@ -88,9 +67,9 @@ if(env_port)
 //if adminToken is not a valid value the token manager just acts as a dummy allowing all connections
 let tokenManager = new TokenManager(config.adminToken, config.log_verbose);
 if (tokenManager.isActive()) {
-    console.log("Admin token set in config.json. Connections will be blocked by default unless a valid user token is used.");
+    logger.log("Admin token set in config.json. Connections will be blocked by default unless a valid user token is used.");
 } else {
-    console.log("No admin token set. The server allows all connections.");
+    logger.log("No admin token set. The server allows all connections.");
 }
 
 
@@ -110,7 +89,7 @@ var httpsServer: https.Server = null;
 //to allow checking if the server is online
 function defaultRequest(req: http.IncomingMessage, res: http.ServerResponse) {
 
-    console.log(`Request received from IP: ${req.socket.remoteAddress}:${req.socket.remotePort} to url ${req.url}`);
+    logger.log(`Request received from IP: ${req.socket.remoteAddress}:${req.socket.remotePort} to url ${req.url}`);
     const parsedUrl = url.parse(req.url!, true);
     const pathname = parsedUrl.pathname;
     if (pathname === '/api/admin/regUserToken') {
@@ -122,6 +101,8 @@ function defaultRequest(req: http.IncomingMessage, res: http.ServerResponse) {
     }
 }
 
+
+
 //Setup http endpoint for ws://
 if (config.httpConfig) {
     httpServer = http.createServer(defaultRequest);
@@ -130,48 +111,47 @@ if (config.httpConfig) {
         host: config.httpConfig.host
     }
 
-    httpServer.listen(options, function () { 
-        console.log('websockets/http listening on ', httpServer.address());
+    httpServer.listen(options, function () {
+        logger.log('websockets/http listening on ' + httpServer.address());
     });
     //perMessageDeflate: false needs to be set to false turning off the compression. if set to true
     //the websocket library crashes if big messages are received (eg.128mb) no matter which payload is set!!!
     var webSocketServer = new ws.Server(
-    {
-        server: httpServer,
-        //path: app.path,
-        maxPayload: config.maxPayload,
-        perMessageDeflate: false
-    });
+        {
+            server: httpServer,
+            //path: app.path,
+            maxPayload: config.maxPayload,
+            perMessageDeflate: false
+        });
     //incoming websocket connections will be handled by signalingServer
-    signalingServer.addSocketServer(webSocketServer, config.apps as wns.IAppConfig[], tokenManager.checkUserToken);
+    signalingServer.addSocketServer(webSocketServer, tokenManager.checkUserToken);
 }
 
 
 
 //Setup https endpoint for wss://
-if (config.httpsConfig)
-{
+if (config.httpsConfig) {
     //load SSL files. If this crashes check the congig.json and make sure the files
     //are at the correct location
     httpsServer = https.createServer({
         key: fs.readFileSync(config.httpsConfig.ssl_key_file),
         cert: fs.readFileSync(config.httpsConfig.ssl_cert_file)
     }, defaultRequest);
-    
+
     let options = {
         port: config.httpsConfig.port,
         host: config.httpsConfig.host
     }
     httpsServer.listen(options, function () {
-        console.log('secure websockets/https listening on ', httpsServer.address());
+        logger.log('secure websockets/https listening on ' + httpsServer.address());
     });
 
-    var webSocketSecure = new ws.Server( {
+    var webSocketSecure = new ws.Server({
         server: httpsServer,
         //path: app.path,
         maxPayload: config.maxPayload,
         perMessageDeflate: false
-    }); 
+    });
     //incoming websocket connections will be handled by signalingServer
-    signalingServer.addSocketServer(webSocketSecure, config.apps as wns.IAppConfig[], tokenManager.checkUserToken);
+    signalingServer.addSocketServer(webSocketSecure, tokenManager.checkUserToken);
 }
