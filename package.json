@@ -8,9 +8,7 @@
     "tsc": "tsc",
     "build": "tsc",
     "start": "node out/server.js",
-    "watch": "ts-node-dev  --respawn src/server.ts",
-    "test": "vitest",
-    "test:watch": "vitest watch"
+    "watch": "ts-node-dev  --respawn src/server.ts"
   },
   "repository": {
     "type": "git",
@@ -38,10 +36,8 @@
   "devDependencies": {
     "@types/node": "^22.15.32",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^3.2.4",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^5.8.3"
   }
 }
