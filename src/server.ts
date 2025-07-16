@@ -8,10 +8,10 @@ import finalhandler from 'finalhandler';
 
 import * as wns from './WebsocketNetworkServer';
 import { TokenManager } from './TokenManager';
-import { AppConfig, ServerConfig, validatePort } from './ServerConfig';
+import { ServerConfig, validatePort } from './ServerConfig';
 import { DefaultPeerPool } from './PeerPool';
 
-import { ILogger, SLogger } from './Logger';  
+import { SLogger } from './Logger';  
 
 const logger = new SLogger("sig");
 
@@ -112,7 +112,7 @@ if (config.httpConfig) {
     }
 
     httpServer.listen(options, function () {
-        logger.log('websockets/http listening on ' + httpServer.address());
+        logger.log('websockets/http listening on ' + JSON.stringify(httpServer.address()));
     });
     //perMessageDeflate: false needs to be set to false turning off the compression. if set to true
     //the websocket library crashes if big messages are received (eg.128mb) no matter which payload is set!!!
@@ -143,7 +143,7 @@ if (config.httpsConfig) {
         host: config.httpsConfig.host
     }
     httpsServer.listen(options, function () {
-        logger.log('secure websockets/https listening on ' + httpsServer.address());
+        logger.log('secure websockets/https listening on ' + JSON.stringify(httpsServer.address()));
     });
 
     var webSocketSecure = new ws.Server({
