@@ -8,7 +8,8 @@
     "tsc": "tsc",
     "build": "tsc",
     "start": "node out/server.js",
-    "watch": "ts-node-dev  --respawn src/server.ts"
+    "watch": "ts-node-dev  --respawn src/server.ts",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
