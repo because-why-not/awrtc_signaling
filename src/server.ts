@@ -37,7 +37,7 @@ config.apps.forEach((app) => {
 
 //azure uses port
 //heroku uses PORT
-var env_port = process.env.port || process.env.PORT;
+const env_port = process.env.port || process.env.PORT;
 
 //handle special cloud service setup
 if (env_port) {
@@ -76,11 +76,12 @@ if (tokenManager.isActive()) {
 
 //request handler that will deliver files from public directory
 //can be used like a simple http / https webserver
-var serve = serveStatic("./public");
+//also needed for let's encrypt to get a free SSL certificate
+const serve = serveStatic("./public", {dotfiles: "allow"});
 
 //setup http/https endpoints
-var httpServer: http.Server = null;
-var httpsServer: https.Server = null;
+let httpServer: http.Server = null;
+let httpsServer: https.Server = null;
 
 
 
@@ -96,7 +97,7 @@ function defaultRequest(req: http.IncomingMessage, res: http.ServerResponse) {
         tokenManager.processRequest(req, res);
     } else {
         //res.setHeader("Access-Control-Allow-Origin", "*"); //allow access from anywhere
-        var done = finalhandler(req, res);
+        const done = finalhandler(req, res);
         serve(req, res, done);
     }
 }
@@ -116,7 +117,7 @@ if (config.httpConfig) {
     });
     //perMessageDeflate: false needs to be set to false turning off the compression. if set to true
     //the websocket library crashes if big messages are received (eg.128mb) no matter which payload is set!!!
-    var webSocketServer = new ws.Server(
+    const webSocketServer = new ws.Server(
         {
             server: httpServer,
             //path: app.path,
@@ -146,7 +147,7 @@ if (config.httpsConfig) {
         logger.log('secure websockets/https listening on ' + JSON.stringify(httpsServer.address()));
     });
 
-    var webSocketSecure = new ws.Server({
+    const webSocketSecure = new ws.Server({
         server: httpsServer,
         //path: app.path,
         maxPayload: config.maxPayload,
