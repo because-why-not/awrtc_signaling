@@ -8,7 +8,7 @@
     "tsc": "tsc",
     "build": "tsc",
     "start": "node out/server.js",
-    "watch": "ts-node-dev  --respawn src/server.ts",
+    "watch": "tsx watch src/server.ts",
     "prepare": "npm run build"
   },
   "repository": {
@@ -37,7 +37,6 @@
   "devDependencies": {
     "@types/node": "^22.15.32",
     "@types/ws": "^8.18.1",
-    "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
