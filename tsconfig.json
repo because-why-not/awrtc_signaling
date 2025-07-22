@@ -10,6 +10,7 @@
 	  "outDir" : "./out",
     "esModuleInterop" : true,
     "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
   },
   "exclude": [
     "node_modules",

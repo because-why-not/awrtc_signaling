@@ -25,9 +25,6 @@ export class WebsocketNetworkServer {
         this.mPool[path] = pool;
     }
 
-
-
-
     /**Adds a new websocket server that will be used to receive incoming connections for
      * the given apps. 
      * 

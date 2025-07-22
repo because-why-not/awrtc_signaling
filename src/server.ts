@@ -15,7 +15,7 @@ import { SLogger } from './Logger';
 
 const logger = new SLogger("sig");
 
-const config: ServerConfig = require("../config.json");
+const config: ServerConfig = require("../config.json") as ServerConfig;
 
 logger.info("Your current nodejs version: " + process.version)
 
@@ -65,7 +65,7 @@ if (env_port) {
 
 
 //if adminToken is not a valid value the token manager just acts as a dummy allowing all connections
-let tokenManager = new TokenManager(config.adminToken, config.log_verbose);
+const tokenManager = new TokenManager(config.adminToken, config.log_verbose);
 if (tokenManager.isActive()) {
     logger.log("Admin token set in config.json. Connections will be blocked by default unless a valid user token is used.");
 } else {
@@ -91,7 +91,7 @@ let httpsServer: https.Server = null;
 function defaultRequest(req: http.IncomingMessage, res: http.ServerResponse) {
 
     logger.log(`Request received from IP: ${req.socket.remoteAddress}:${req.socket.remotePort} to url ${req.url}`);
-    const parsedUrl = url.parse(req.url!, true);
+    const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
     if (pathname === '/api/admin/regUserToken') {
         tokenManager.processRequest(req, res);
@@ -107,7 +107,7 @@ function defaultRequest(req: http.IncomingMessage, res: http.ServerResponse) {
 //Setup http endpoint for ws://
 if (config.httpConfig) {
     httpServer = http.createServer(defaultRequest);
-    let options = {
+    const options = {
         port: config.httpConfig.port,
         host: config.httpConfig.host
     }
@@ -139,7 +139,7 @@ if (config.httpsConfig) {
         cert: fs.readFileSync(config.httpsConfig.ssl_cert_file)
     }, defaultRequest);
 
-    let options = {
+    const options = {
         port: config.httpsConfig.port,
         host: config.httpsConfig.host
     }

@@ -1,9 +1,7 @@
 import WebSocket from 'ws';
-
 import { NetEventType, NetworkEvent } from "./INetwork";
 import { Protocol } from "./Protocol";
 import { WebsocketEndpoint } from "./WebsocketEndpoint";
-import { WebsocketNetworkServer } from "./WebsocketNetworkServer";
 import { ILogger } from './Logger';
 
 /** BinaryWebsocketProtocol communicate with the client via 
