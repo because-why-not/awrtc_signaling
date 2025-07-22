@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import WebSocket, { RawData } from 'ws';
 import { NetEventType, NetworkEvent } from "./INetwork";
 import { Protocol } from "./Protocol";
 import { WebsocketEndpoint } from "./WebsocketEndpoint";
@@ -45,13 +45,11 @@ export class BinaryWebsocketProtocol extends Protocol {
         super();
         this.mEndPoint = ep;
         this.mLog = logger;
-        this.mEndPoint.ws.on('message', (message: any, flags: any) => {
-            this.onMessage(message, flags);
-        });
-        this.mEndPoint.ws.on('error', this.onError);
-        this.mEndPoint.ws.on('close', (code: number, message: string) => { this.onClose(code, message); });
+        this.mEndPoint.ws.on('message', (data, isBinary) => this.onMessage(data, isBinary));
+        this.mEndPoint.ws.on('error', (error) => this.onError(error));
+        this.mEndPoint.ws.on('close', (code) => this.onClose(code));
 
-        this.mEndPoint.ws.on('pong', (data: any, flags: { binary: boolean }) => {
+        this.mEndPoint.ws.on('pong', () => {
             this.mPongReceived = true;
             this.logInc("pong");
         });
@@ -71,7 +69,7 @@ export class BinaryWebsocketProtocol extends Protocol {
             const msg = NetworkEvent.toByteArray(evt);
             this.internalSend(msg);
         } else {
-            this.mLog.warn(`dropped message of type ${NetEventType[evt.Type]} because the websocket is not open. Websocket state: ${this.mEndPoint.ws.readyState}` );
+            this.mLog.warn(`dropped message of type ${NetEventType[evt.Type]} because the websocket is not open. Websocket state: ${this.mEndPoint.ws.readyState}`);
         }
     }
 
@@ -79,23 +77,30 @@ export class BinaryWebsocketProtocol extends Protocol {
         this.mLog.logv("INC: " + msg);
     }
 
-    private onMessage(inmessage: any, flags: any): void {
-
+    private onMessage = (inmessage: RawData, isBinary: boolean) => {
+        if (isBinary === false) {
+            this.mLog.error("Received a websocket message with isBinary == false but expected true!");
+            return;
+        }
+        if (Buffer.isBuffer(inmessage) == false) {
+            this.mLog.error("Received a websocket message event with an unexpected RawData format!");
+            return;
+        }
         try {
-            const msg = inmessage as Uint8Array;
+            const msg = new Uint8Array(inmessage);
             this.processMessage(msg);
         } catch (err) {
             console.error("Caught exception:", err);
-            this.mLog.error(this.getIdentity() + " Invalid message received: " + inmessage + "  \n Error: " + err);
+            this.mLog.error("Invalid binary message received: " + JSON.stringify(inmessage) + "  \n Error: " + err);
         }
     }
 
-    private onClose(code: number, error: string): void {
-        this.mLog.logv(" CLOSED!");
+    private onClose = (code: number): void => {
+        this.mLog.logv(`CLOSED  ${code}`);
         this.cleanup();
     }
-    private onError = (error: any) => {
-        this.mLog.error(" ERROR: " + error);
+    private onError = (error: Error) => {
+        this.mLog.error("ERROR: " + error.message);
         this.cleanup();
     }
 
@@ -162,13 +167,13 @@ export class BinaryWebsocketProtocol extends Protocol {
     }
 
     private processMessage(msg: Uint8Array): void {
-        if (msg[0] == NetEventType.MetaVersion) {
+        if ((msg[0] as NetEventType) == NetEventType.MetaVersion) {
             const v = msg[1];
             this.logInc("protocol version " + v);
             this.mRemoteProtocolVersion = v;
             this.sendVersion();
 
-        } else if (msg[0] == NetEventType.MetaHeartbeat) {
+        } else if ((msg[0] as NetEventType) == NetEventType.MetaHeartbeat) {
             this.logInc("heartbeat");
             this.sendHeartbeat();
         } else {
