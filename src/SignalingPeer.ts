@@ -46,10 +46,10 @@ export class SignalingPeer {
         //update internal state based on the event
         if (evt.Type == NetEventType.NewConnection) {
             //client wants to connect to another client
-            let address: string = evt.Info;
+            const address: string = evt.Info;
 
             //the id this connection should be addressed with
-            let newConnectionId = evt.ConnectionId;
+            const newConnectionId = evt.ConnectionId;
             this.connect(address, newConnectionId);
 
         } else if (evt.Type == NetEventType.ConnectionFailed) {
@@ -59,7 +59,7 @@ export class SignalingPeer {
         } else if (evt.Type == NetEventType.Disconnected) {
 
             //peer tries to disconnect from another peer
-            var otherPeerId = evt.ConnectionId;
+            const otherPeerId = evt.ConnectionId;
             this.disconnect(otherPeerId);
 
         } else if (evt.Type == NetEventType.ServerInitialized) {
@@ -104,7 +104,7 @@ export class SignalingPeer {
         this.mController.onCleanup(this);
 
         //disconnect all connections        
-        for (let v in this.mConnections) {
+        for (const v in this.mConnections) {
             if (this.mConnections.hasOwnProperty(v))
                 this.disconnect(new ConnectionId(+v));
         }
@@ -126,7 +126,7 @@ export class SignalingPeer {
         //another peer connected to this (while allowing incoming connections)
 
         //store the reference
-        var id = this.nextConnectionId();
+        const id = this.nextConnectionId();
         this.mConnections[id.id] = peer;
 
         //event to this (the other peer gets the event via addOutgoing
@@ -152,7 +152,7 @@ export class SignalingPeer {
     //for creating the connection id
     private findPeerConnectionId(otherPeer: SignalingPeer) {
 
-        for (let peer in this.mConnections) {
+        for (const peer in this.mConnections) {
             if (this.mConnections[peer] === otherPeer) {
 
                 return new ConnectionId(+peer);
@@ -161,7 +161,7 @@ export class SignalingPeer {
     }
 
     private nextConnectionId(): ConnectionId {
-        let result = this.mNextIncomingConnectionId;
+        const result = this.mNextIncomingConnectionId;
         this.mNextIncomingConnectionId = new ConnectionId(this.mNextIncomingConnectionId.id + 1);
         return result;
     }
@@ -186,11 +186,11 @@ export class SignalingPeer {
     }
 
     public disconnect(connectionId: ConnectionId) {
-        var otherPeer = this.mConnections[connectionId.id];
+        const otherPeer = this.mConnections[connectionId.id];
 
         if (otherPeer != null) {
 
-            let idOfOther = otherPeer.findPeerConnectionId(this);
+            const idOfOther = otherPeer.findPeerConnectionId(this);
 
             //find the connection id the other peer uses to talk to this one
             this.internalRemovePeer(connectionId);
@@ -236,7 +236,7 @@ export class SignalingPeer {
     //delivers the message to the local peer
     private forwardMessage(senderPeer: SignalingPeer, msg: any, reliable: boolean) {
 
-        let id = this.findPeerConnectionId(senderPeer);
+        const id = this.findPeerConnectionId(senderPeer);
         if (reliable)
             this.sendToClient(new NetworkEvent(NetEventType.ReliableMessageReceived, id, msg));
         else
@@ -244,7 +244,7 @@ export class SignalingPeer {
     }
     public sendData(id: ConnectionId, msg: any, reliable: boolean) {
 
-        let peer = this.mConnections[id.id];
+        const peer = this.mConnections[id.id];
         if (peer != null)
             peer.forwardMessage(this, msg, reliable);
     }

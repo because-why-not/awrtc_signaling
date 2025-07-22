@@ -126,7 +126,7 @@ export class NetworkEvent {
 
     public static parseFromString(str: string): NetworkEvent {
 
-        let values = JSON.parse(str);
+        const values = JSON.parse(str);
 
 
         let data: any;
@@ -138,21 +138,21 @@ export class NetworkEvent {
 
             //json represents the array as an object containing each index and the
             //value as string number ... improve that later
-            let arrayAsObject = values.data;
-            var length = 0;
-            for (var prop in arrayAsObject) {
+            const arrayAsObject = values.data;
+            let length = 0;
+            for (const prop in arrayAsObject) {
                 //if (arrayAsObject.hasOwnProperty(prop)) { //shouldnt be needed
                 length++;
                 //}
             }
-            let buffer = new Uint8Array(Object.keys(arrayAsObject).length);
+            const buffer = new Uint8Array(Object.keys(arrayAsObject).length);
             for (let i = 0; i < buffer.length; i++)
                 buffer[i] = arrayAsObject[i];
             data = buffer;
         } else {
             console.log("network event can't be parsed: " + str);
         }
-        var evt = new NetworkEvent(values.type, values.connectionId, data);
+        const evt = new NetworkEvent(values.type, values.connectionId, data);
         return evt;
     }
 
@@ -162,24 +162,24 @@ export class NetworkEvent {
     public static fromByteArray(arrin: Uint8Array): NetworkEvent {
         //old node js versions seem to not return proper Uint8Arrays but
         //buffers -> make sure it is a Uint8Array
-        let arr: Uint8Array = new Uint8Array(arrin)
+        const arr: Uint8Array = new Uint8Array(arrin)
 
-        let type: NetEventType = arr[0]; //byte
-        let dataType: NetEventDataType = arr[1]; //byte
-        let id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
+        const type: NetEventType = arr[0]; //byte
+        const dataType: NetEventDataType = arr[1]; //byte
+        const id: number = new Int16Array(arr.buffer, arr.byteOffset + 2, 1)[0]; //short
 
 
         let data: any = null;
         if (dataType == NetEventDataType.ByteArray) {
 
-            let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
-            let byteArray = new Uint8Array(arr.buffer, arr.byteOffset + 8, length);
+            const length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
+            const byteArray = new Uint8Array(arr.buffer, arr.byteOffset + 8, length);
             data = byteArray;
 
         } else if (dataType == NetEventDataType.UTF16String) {
 
-            let length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
-            let uint16Arr = new Uint16Array(arr.buffer, arr.byteOffset + 8, length);
+            const length: number = new Uint32Array(arr.buffer, arr.byteOffset + 4, 1)[0]; //uint
+            const uint16Arr = new Uint16Array(arr.buffer, arr.byteOffset + 8, length);
 
             let str: string = "";
             for (let i = 0; i < uint16Arr.length; i++) {
@@ -193,8 +193,8 @@ export class NetworkEvent {
             throw new Error('Message has an invalid data type flag: ' + dataType);
         }
 
-        let conId: ConnectionId = new ConnectionId(id);
-        let result: NetworkEvent = new NetworkEvent(type, conId, data);
+        const conId: ConnectionId = new ConnectionId(id);
+        const result: NetworkEvent = new NetworkEvent(type, conId, data);
         return result;
     }
     public static toByteArray(evt: NetworkEvent): Uint8Array {
@@ -207,37 +207,37 @@ export class NetworkEvent {
             dataType = NetEventDataType.Null;
         } else if (typeof evt.data == "string") {
             dataType = NetEventDataType.UTF16String;
-            let str: string = evt.data;
+            const str: string = evt.data;
             length += str.length * 2 + 4;
         } else {
             dataType = NetEventDataType.ByteArray;
-            let byteArray: Uint8Array = evt.data;
+            const byteArray: Uint8Array = evt.data;
             length += 4 + byteArray.length;
         }
 
         //creating the byte array
-        let result = new Uint8Array(length);
+        const result = new Uint8Array(length);
         result[0] = evt.type;;
         result[1] = dataType;
 
-        let conIdField = new Int16Array(result.buffer, result.byteOffset + 2, 1);
+        const conIdField = new Int16Array(result.buffer, result.byteOffset + 2, 1);
         conIdField[0] = evt.connectionId.id;
 
         if (dataType == NetEventDataType.ByteArray) {
 
-            let byteArray: Uint8Array = evt.data;
-            let lengthField = new Uint32Array(result.buffer, result.byteOffset + 4, 1);
+            const byteArray: Uint8Array = evt.data;
+            const lengthField = new Uint32Array(result.buffer, result.byteOffset + 4, 1);
             lengthField[0] = byteArray.length;
             for (let i = 0; i < byteArray.length; i++) {
                 result[8 + i] = byteArray[i];
             }
         } else if (dataType == NetEventDataType.UTF16String) {
 
-            let str: string = evt.data;
-            let lengthField = new Uint32Array(result.buffer, result.byteOffset + 4, 1);
+            const str: string = evt.data;
+            const lengthField = new Uint32Array(result.buffer, result.byteOffset + 4, 1);
             lengthField[0] = str.length;
 
-            let dataField = new Uint16Array(result.buffer, result.byteOffset + 8, str.length);
+            const dataField = new Uint16Array(result.buffer, result.byteOffset + 8, str.length);
             for (let i = 0; i < dataField.length; i++) {
                 dataField[i] = str.charCodeAt(i);
             }

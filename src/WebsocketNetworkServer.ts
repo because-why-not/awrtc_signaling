@@ -38,7 +38,7 @@ export class WebsocketNetworkServer {
                 socket.close(1008, "Invalid token");
                 return;
             }
-            let ep = new WebsocketEndpoint(socket, request);
+            const ep = new WebsocketEndpoint(socket, request);
 
             if (ep.appPath in this.mPool) {
                 this.mLog.log("New websocket connection from " + ep.getConnectionInfo() + " on " +  ep.getLocalConnectionInfo());

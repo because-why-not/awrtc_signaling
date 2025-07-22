@@ -63,7 +63,7 @@ export class TokenManager {
                     if (this.verboseLog)
                         console.log("Admin request received: ", body);
                     try {
-                        let obj = JSON.parse(body) as UserTokenRequest;
+                        const obj = JSON.parse(body) as UserTokenRequest;
 
                         if (this.isValidUserTokenRequest(obj)) {
                             res.statusCode = 200;

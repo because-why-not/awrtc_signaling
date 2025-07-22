@@ -70,7 +70,7 @@ export abstract class PeerPool implements IPeerController {
 
         this.mLog.log("new peer for pool " + this.name + " remote address: " + ep.getConnectionInfo() + " local address: " + ep.getLocalConnectionInfo());
         const protocol = new BinaryWebsocketProtocol(ep, peerLogger);
-        let peer = new SignalingPeer(this, protocol,  peerLogger);
+        const peer = new SignalingPeer(this, protocol,  peerLogger);
         this.mConnections.push(peer);
     }
 
@@ -82,7 +82,7 @@ export abstract class PeerPool implements IPeerController {
 
     //Removes a given connection from the pool
     public removeConnection(client: SignalingPeer) {
-        let index = this.mConnections.indexOf(client);
+        const index = this.mConnections.indexOf(client);
         if (index != -1) {
             this.mConnections.splice(index, 1);
         } else {
@@ -109,7 +109,7 @@ export abstract class PeerPool implements IPeerController {
     public removeServer(client: SignalingPeer, address: string) {
 
         //supports address sharing. remove the client from the server list that share the address
-        let index = this.mServers[address].indexOf(client);
+        const index = this.mServers[address].indexOf(client);
         if (index != -1) {
             this.mServers[address].splice(index, 1);
         }
@@ -177,12 +177,12 @@ export class DefaultPeerPool extends PeerPool {
     //(hasAddressSharing flag is true)
     public acceptJoin(address: string, client: SignalingPeer): void {
 
-        var serverConnections = this.getServerConnection(address);
+        const serverConnections = this.getServerConnection(address);
 
         //in join mode every connection is incoming as everyone listens together
         if (serverConnections != null) {
 
-            for (var v of serverConnections) {
+            for (const v of serverConnections) {
                 //avoid connecting the peer to itself
                 if (v != client) {
                     v.acceptIncomingConnection(client);
@@ -204,7 +204,7 @@ export class DefaultPeerPool extends PeerPool {
         //if this contains 0 peers -> connection fails because no one is listening
         //If this contains 1 peer -> connect to that peer
         //TODO: if it contains multiple peers -> trigger an error as connect can only be used for 1-to-1
-        var serverConnections = this.getServerConnection(address);
+        const serverConnections = this.getServerConnection(address);
         if (serverConnections != null && serverConnections.length == 1) {
 
             const otherPeer = serverConnections[0];

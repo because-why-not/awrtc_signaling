@@ -68,7 +68,7 @@ export class BinaryWebsocketProtocol extends Protocol {
         //onclosed being called immediately -> socket has to be checked if open
         if (this.mEndPoint.ws.readyState == WebSocket.OPEN) {
             this.logOut(this.evtToString(evt));
-            let msg = NetworkEvent.toByteArray(evt);
+            const msg = NetworkEvent.toByteArray(evt);
             this.internalSend(msg);
         } else {
             this.mLog.warn(`dropped message of type ${NetEventType[evt.Type]} because the websocket is not open. Websocket state: ${this.mEndPoint.ws.readyState}` );
@@ -82,7 +82,7 @@ export class BinaryWebsocketProtocol extends Protocol {
     private onMessage(inmessage: any, flags: any): void {
 
         try {
-            let msg = inmessage as Uint8Array;
+            const msg = inmessage as Uint8Array;
             this.processMessage(msg);
         } catch (err) {
             console.error("Caught exception:", err);
@@ -143,7 +143,7 @@ export class BinaryWebsocketProtocol extends Protocol {
         //close the websocket
         if (this.mEndPoint.ws.readyState != WebSocket.CLOSED) {
             this.mEndPoint.ws.close(1000, "Done");
-            let fallbackWs = this.mEndPoint.ws;
+            const fallbackWs = this.mEndPoint.ws;
             const closingTimeout = 5000;
             setTimeout(() => {
                 if (fallbackWs.readyState != WebSocket.CLOSED) {
@@ -163,7 +163,7 @@ export class BinaryWebsocketProtocol extends Protocol {
 
     private processMessage(msg: Uint8Array): void {
         if (msg[0] == NetEventType.MetaVersion) {
-            let v = msg[1];
+            const v = msg[1];
             this.logInc("protocol version " + v);
             this.mRemoteProtocolVersion = v;
             this.sendVersion();
@@ -172,7 +172,7 @@ export class BinaryWebsocketProtocol extends Protocol {
             this.logInc("heartbeat");
             this.sendHeartbeat();
         } else {
-            let evt = NetworkEvent.fromByteArray(msg);
+            const evt = NetworkEvent.fromByteArray(msg);
             this.logInc(this.evtToString(evt));
             this.handleIncomingEvent(evt);
         }
@@ -187,8 +187,8 @@ export class BinaryWebsocketProtocol extends Protocol {
     }
 
     private sendVersion() {
-        let msg = new Uint8Array(2);
-        let ver = BinaryWebsocketProtocol.PROTOCOL_VERSION;
+        const msg = new Uint8Array(2);
+        const ver = BinaryWebsocketProtocol.PROTOCOL_VERSION;
         msg[0] = NetEventType.MetaVersion;
         msg[1] = ver;
         this.logOut("version " + ver);
@@ -196,7 +196,7 @@ export class BinaryWebsocketProtocol extends Protocol {
     }
 
     private sendHeartbeat() {
-        let msg = new Uint8Array(1);
+        const msg = new Uint8Array(1);
         msg[0] = NetEventType.MetaHeartbeat;
         this.logOut("heartbeat");
         this.internalSend(msg);
@@ -217,11 +217,11 @@ export class BinaryWebsocketProtocol extends Protocol {
             output += "), Data: (";
             output += evt.Info;
         } else if (evt.MessageData != null) {
-            let chars = new Uint16Array(evt.MessageData.buffer, evt.MessageData.byteOffset, evt.MessageData.byteLength / 2);
+            const chars = new Uint16Array(evt.MessageData.buffer, evt.MessageData.byteOffset, evt.MessageData.byteLength / 2);
             output += "), Data: (";
             let binaryString = "";
 
-            for (var i = 0; i < chars.length; i++) {
+            for (let i = 0; i < chars.length; i++) {
                 binaryString += String.fromCharCode(chars[i]);
             }
             output += binaryString;
