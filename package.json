@@ -6,10 +6,12 @@
   "types": "out/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --project tsconfig.vitest.json --noEmit",
     "start": "node out/server.js",
     "watch": "tsx watch src/server.ts",
     "lint": "eslint",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -43,6 +45,7 @@
     "eslint": "^9.31.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
   }
 }

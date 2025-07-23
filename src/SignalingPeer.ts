@@ -23,6 +23,10 @@ export class SignalingPeer {
 
     private mController: IPeerController;
     private mState: SignalingConnectionState = SignalingConnectionState.Uninitialized;
+    public get state(): SignalingConnectionState {
+        return this.mState;
+    }
+
     private mConnections: IConnectionIdPeerDictionary = {};
     //C# version uses short so 16384 is 50% of the positive numbers (maybe might make sense to change to ushort or int)
     private mNextIncomingConnectionId: ConnectionId = new ConnectionId(16384);
@@ -191,7 +195,10 @@ export class SignalingPeer {
         if (otherPeer != null) {
 
             const idOfOther = otherPeer.findPeerConnectionId(this);
-
+            if (idOfOther === undefined) {
+                this.mLog.error("Tried to disconnect from a peer that is not connected. Bug in IController not creating bidrectional connections? " + otherPeer.getIdentity());
+                return;
+            }
             //find the connection id the other peer uses to talk to this one
             this.internalRemovePeer(connectionId);
             otherPeer.internalRemovePeer(idOfOther);
