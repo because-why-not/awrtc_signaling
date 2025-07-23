@@ -1,10 +1,8 @@
 import { ConnectionId } from "./INetwork";
 import { ILogger } from "./Logger";
+import { Protocol } from "./Protocol";
 import { AppConfig } from "./ServerConfig";
 import { SignalingPeer } from "./SignalingPeer";
-import { WebsocketEndpoint } from "./WebsocketEndpoint";
-import { WebsocketNetworkServer } from "./WebsocketNetworkServer";
-import { BinaryWebsocketProtocol } from "./WebsocketProtocol";
 
 //Dictionary containing a list of peers that all listen on the same address.
 export interface IAddressPeerDictionary {
@@ -62,17 +60,18 @@ export abstract class PeerPool implements IPeerController {
 
     public abstract get name(): string;
 
-
-    //add a new connection based on this websocket
-    public add(ep: WebsocketEndpoint) {
-        const peerName = ep.getConnectionInfo();
-        const peerLogger = this.mLog.createSub(peerName);
-
-        this.mLog.log("new peer for pool " + this.name + " remote address: " + ep.getConnectionInfo() + " local address: " + ep.getLocalConnectionInfo());
-        const protocol = new BinaryWebsocketProtocol(ep, peerLogger);
-        const peer = new SignalingPeer(this, protocol,  peerLogger);
+    public addPeerFromProtocol(protocol: Protocol) {
+        // using the identity returned by the protocol to identify the peer for now
+        // e.g. this might be IP/port
+        const peerLogger = this.mLog.createSub(protocol.getIdentity());
+        const peer = new SignalingPeer(this, protocol, peerLogger);
+        this.addPeer(peer);
+    }
+    public addPeer(peer: SignalingPeer) {
         this.mConnections.push(peer);
     }
+
+
 
     //Returns the SignalingClientConnection that opened a server using the given address
     //or null if address not in use
@@ -90,12 +89,10 @@ export abstract class PeerPool implements IPeerController {
         }
     }
 
-
     public count(): number {
         return this.mConnections.length;
     }
-
-
+    
     //adds a new address. No checks are performed here.
     public addListener(client: SignalingPeer, address: string): void {
 

@@ -3,6 +3,7 @@ import http from 'http';
 import { WebsocketEndpoint } from './WebsocketEndpoint';
 import { PeerPool } from './PeerPool';
 import { ILogger } from './Logger';
+import { BinaryWebsocketProtocol } from './WebsocketProtocol';
 
 export interface IPoolDictionary {
     [path: string]: PeerPool;
@@ -15,8 +16,11 @@ export class WebsocketNetworkServer {
         this.mLog = logger;
     }
 
-    private onConnection(ep: WebsocketEndpoint) {
-        this.mPool[ep.appPath].add(ep);
+    private onConnection(ep: WebsocketEndpoint, pool: PeerPool) {
+        this.mLog.log("new peer for pool " + pool.name + " remote address: " + ep.getConnectionInfo() + " local address: " + ep.getLocalConnectionInfo());
+        const peerLogger = this.mLog.createSub(ep.getConnectionInfo());
+        const protocol = new BinaryWebsocketProtocol(ep, peerLogger);
+        pool.addPeerFromProtocol(protocol);
     }
 
 
@@ -43,7 +47,8 @@ export class WebsocketNetworkServer {
             if (ep.appPath in this.mPool) {
                 this.mLog.log("New websocket connection from " + ep.getConnectionInfo() + " on " +  ep.getLocalConnectionInfo());
                 
-                this.onConnection(ep);
+                const pool = this.mPool[ep.appPath];
+                this.onConnection(ep, pool);
             } else {
 
                 this.mLog.error("Websocket tried to connect to unknown app " + ep.appPath);
