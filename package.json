@@ -44,6 +44,7 @@
     "@types/node": "^22.15.32",
     "@types/ws": "^8.18.1",
     "eslint": "^9.31.0",
+    "prettier": "^3.6.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
