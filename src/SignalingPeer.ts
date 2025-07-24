@@ -250,12 +250,12 @@ export class SignalingPeer {
         this.mController.onConnectionRequest(this, address, newConnectionId);
     }
 
-    public acceptOutgoingConnection(otherPeer: SignalingPeer, newConnectionId: ConnectionId) {
-        this.internalAddOutgoingPeer(otherPeer, newConnectionId);
+    public acceptOutgoingConnection(otherPeer: ISignalingPeer, newConnectionId: ConnectionId) {
+        this.internalAddOutgoingPeer(otherPeer as SignalingPeer, newConnectionId);
     }
 
-    public acceptIncomingConnection(otherPeer: SignalingPeer) {
-        this.internalAddIncomingPeer(otherPeer);
+    public acceptIncomingConnection(otherPeer: ISignalingPeer) {
+        this.internalAddIncomingPeer(otherPeer as SignalingPeer);
     }
 
     public denyConnection(address: string, newConnectionId: ConnectionId) {
