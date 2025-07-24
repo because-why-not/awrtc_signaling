@@ -11,14 +11,83 @@ export enum SignalingConnectionState {
     Disconnecting, //about to propagate trough the system informing everyone that it is being disconnected
     Disconnected //means the instance is destroyed and unusable
 }
+/** Interface for a SignalingPeer used by a IPeerController to allow / deny connection attempts
+ * and listening requests.
+ * 
+ * The actual initiation of connections, listening on addresses, sending messages is done by
+ * the client side via the Protocol interface.
+ */
+export interface ISignalingPeer {
+    /**
+     * Gets the current connection state of this peer.
+     */
+    readonly state: SignalingConnectionState;
+
+    /**
+     * Accepts an outgoing connection that was successfully established.
+     * This is called by the controller when a connection request is approved.
+     * 
+     * @param otherPeer The peer that this peer connected to
+     * @param newConnectionId The connection ID used for this connection
+     */
+    acceptOutgoingConnection(otherPeer: ISignalingPeer, newConnectionId: ConnectionId): void;
+
+    /**
+     * Accepts an incoming connection from another peer.
+     * This is called when another peer connects to this peer.
+     * 
+     * @param otherPeer The peer that connected to this peer
+     */
+    acceptIncomingConnection(otherPeer: ISignalingPeer): void;
+
+    /**
+     * Denies a connection attempt to the specified address.
+     * This sends a ConnectionFailed event to the client.
+     * 
+     * @param address The address that was requested
+     * @param newConnectionId The connection ID that failed
+     */
+    denyConnection(address: string, newConnectionId: ConnectionId): void;
+
+    /**
+     * Accepts a request to listen on the specified address for incoming connections.
+     * This makes the peer available for other peers to connect to.
+     * 
+     * @param address The address to listen on
+     */
+    acceptListening(address: string): void;
+
+    /**
+     * Denies a request to listen on the specified address.
+     * This sends a ServerInitFailed event to the client.
+     * 
+     * @param address The address that was requested
+     */
+    denyListening(address: string): void;
+
+    /**
+     * Gets a unique identifier for this peer (used for logging and debugging).
+     * 
+     * @returns A string identifier for this peer
+     */
+    getIdentity(): string;
+}
+
+/** Dictionary used to keep track of active peer-to-peer connections.
+ * The ConnectionId integer value is used as a key here (converted to string).
+ */
 export interface IConnectionIdPeerDictionary {
     [key: string]: SignalingPeer;
 };
 
-
-///note: all methods starting with "internal" might leave the system in an inconsistent state
-///e.g. peerA is connected to peerB means peerB is connected to peerA but internalRemoveConnection
-///could cause peerA being disconnected from peerB but peerB still thinking to be connected to peerA!!!
+/** A SignalingPeer is the server side representation of a single client. The client can cause this
+ * peer to connect to the peers of other clients or wait for incoming connections by sending the appropriate requests 
+ * via the Protocol interface. Once a SignalingPeer is connected to another they can relay messages between two clients.
+ * 
+ * Some actions such as message forwarding and disconnects are automatically carried out by the SignalingPeer and can
+ * not be influenced by the server. Others such as connection attempts or attempts to listen on an address are handled
+ * by the IPeerController.
+ */
 export class SignalingPeer {
 
     private mController: IPeerController;
@@ -44,6 +113,11 @@ export class SignalingPeer {
             onNetworkClosed: this.onNetworkClose
         });
         this.mState = SignalingConnectionState.Connected;
+    }
+
+    public getIdentity(): string {
+        //used to identify this peer for log messages / debugging
+        return this.mProtocol.getIdentity();
     }
 
     private onNetworkEvent = (evt: NetworkEvent): void => {
@@ -82,7 +156,7 @@ export class SignalingPeer {
     //called by the protocol if the underlaying socket closed
     private onNetworkClose = (): void => {
         //cleanup is triggered by the protocol
-        this.Cleanup();
+        this.cleanup();
     }
 
     private sendToClient(evt: NetworkEvent) {
@@ -92,12 +166,12 @@ export class SignalingPeer {
         if (this.mState == SignalingConnectionState.Connected) {
             this.mProtocol.send(evt);
         } else {
-            this.mLog.logv(`dropped message of type ${NetEventType[evt.Type]} due to state ${ SignalingConnectionState[this.mState]}`);
+            this.mLog.logv(`dropped message of type ${NetEventType[evt.Type]} due to state ${SignalingConnectionState[this.mState]}`);
         }
     }
 
     //used for onClose or NoPongTimeout
-    private Cleanup() {
+    private cleanup() {
         //if the connection was cleaned up during a timeout it might get triggered again during closing.
         if (this.mState === SignalingConnectionState.Disconnecting || this.mState === SignalingConnectionState.Disconnected)
             return;
@@ -172,7 +246,7 @@ export class SignalingPeer {
 
     //this peer initializes a connection to a certain address. The connection id is set by the client
     //to allow tracking of the connection attempt
-    public connect(address: string, newConnectionId: ConnectionId) {
+    private connect(address: string, newConnectionId: ConnectionId) {
         this.mController.onConnectionRequest(this, address, newConnectionId);
     }
 
@@ -189,7 +263,7 @@ export class SignalingPeer {
         this.sendToClient(new NetworkEvent(NetEventType.ConnectionFailed, newConnectionId, null));
     }
 
-    public disconnect(connectionId: ConnectionId) {
+    private disconnect(connectionId: ConnectionId) {
         const otherPeer = this.mConnections[connectionId.id];
 
         if (otherPeer != null) {
@@ -226,7 +300,7 @@ export class SignalingPeer {
         this.sendToClient(new NetworkEvent(NetEventType.ServerInitFailed, ConnectionId.INVALID, address));
     }
 
-    public stopListen() {
+    private stopListen() {
         this.mController.onStopListening(this, this.mOwnAddress);
 
         if (this.mOwnAddress == null) {
@@ -249,16 +323,14 @@ export class SignalingPeer {
         else
             this.sendToClient(new NetworkEvent(NetEventType.UnreliableMessageReceived, id, msg));
     }
-    public sendData(id: ConnectionId, msg: any, reliable: boolean) {
+    private sendData(id: ConnectionId, msg: any, reliable: boolean) {
 
         const peer = this.mConnections[id.id];
-        if (peer != null)
+        if (peer) {
             peer.forwardMessage(this, msg, reliable);
-    }
-
-    public getIdentity(): string {
-        //used to identify this peer for log messages / debugging
-        return this.mProtocol.getIdentity();
+        } else {
+            this.mLog.info("Message dropped. Tried to send message to unknown connection id " + id.id);
+        }
     }
 
 }

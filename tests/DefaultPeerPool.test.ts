@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, test } from 'vitest';
 import {DefaultPeerPool} from '../src/PeerPool.js'
 import { AppConfig } from '../src/ServerConfig.js';
 import { TestHelper } from './TestHelper.js';
-import type { ILogger } from '../src/Logger';
+import type { ILogger } from '../src/Logger.js';
 import { SignalingPeer } from '../src/SignalingPeer.js';
 
 
