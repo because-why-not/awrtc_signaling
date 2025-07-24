@@ -3,8 +3,6 @@ import { ConnectionId, NetEventType, NetworkEvent } from '../src/INetwork';
 import { TestHelper, MockProtocol, MockPeerController } from './TestHelper';
 import { beforeEach, describe, expect, test } from 'vitest';
 
-
-
 describe('SignalingPeer', () => {
     let mockController: MockPeerController;
     let mockProtocol: MockProtocol;
@@ -71,7 +69,7 @@ describe('SignalingPeer', () => {
             expect(sentEvents[0].Type).toBe(NetEventType.NewConnection);
             expect(sentEvents[0].ConnectionId.id).toBeGreaterThanOrEqual(16384);
         });
-        
+
 
         test('should forward Disconnected event to both client connections', () => {
             const connectionId = new ConnectionId(1);
@@ -98,9 +96,9 @@ describe('SignalingPeer', () => {
             expect(sentEvents.some(evt => evt.Type === NetEventType.Disconnected)).toBe(true);
             expect(otherSentEvents.some(evt => evt.Type === NetEventType.Disconnected)).toBe(true);
         });
-        
+
         test('should disconnect on connected peer dispose', () => {
-            
+
             const connectionId = new ConnectionId(1);
 
             // Establish connection

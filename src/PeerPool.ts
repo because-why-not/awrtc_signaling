@@ -93,7 +93,7 @@ export abstract class PeerPool implements IPeerController {
     public count(): number {
         return this.mConnections.length;
     }
-    
+
     //adds a new address. No checks are performed here.
     public addListener(client: ISignalingPeer, address: string): void {
 

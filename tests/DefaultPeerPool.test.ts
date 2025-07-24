@@ -1,4 +1,3 @@
-
 import { describe, expect, beforeEach, test } from 'vitest';
 import { DefaultPeerPool } from '../src/PeerPool';
 import { ISignalingPeer, SignalingConnectionState } from '../src/SignalingPeer';
@@ -6,7 +5,6 @@ import { ConnectionId } from '../src/INetwork';
 import { AppConfig } from '../src/ServerConfig';
 import { TestHelper } from './TestHelper';
 
-// Mock implementation of ISignalingPeer for testing
 class MockSignalingPeer implements ISignalingPeer {
     private _state: SignalingConnectionState = SignalingConnectionState.Connected;
     private _identity: string;
@@ -125,7 +123,7 @@ describe('DefaultPeerPool', () => {
             const mockPeer = new MockSignalingPeer('test-peer');
 
             expect(pool.isAddressAvailable(address)).toBe(true);
-            
+
             pool.addListener(mockPeer, address);
             expect(pool.isAddressAvailable(address)).toBe(false);
         });
@@ -136,7 +134,7 @@ describe('DefaultPeerPool', () => {
 
             pool.addListener(mockPeer, address);
             const servers = pool.getListenerPeers(address);
-            
+
             expect(servers).toHaveLength(1);
             expect(servers[0]).toBe(mockPeer);
         });
@@ -144,7 +142,7 @@ describe('DefaultPeerPool', () => {
         test('should support multiple peers on same address with address sharing', () => {
             const configWithSharing = { ...mockConfig, address_sharing: true };
             const poolWithSharing = new DefaultPeerPool(configWithSharing, TestHelper.logger);
-            
+
             const address = 'shared-address';
             const peer1 = new MockSignalingPeer('peer1');
             const peer2 = new MockSignalingPeer('peer2');
@@ -210,7 +208,7 @@ describe('DefaultPeerPool', () => {
         test('should handle address sharing correctly', () => {
             const configWithSharing = { ...mockConfig, address_sharing: true };
             const poolWithSharing = new DefaultPeerPool(configWithSharing, TestHelper.logger);
-            
+
             const address = 'shared-address';
             const peer1 = new MockSignalingPeer('peer1');
             const peer2 = new MockSignalingPeer('peer2');
@@ -226,14 +224,14 @@ describe('DefaultPeerPool', () => {
         test('should connect peers in address sharing mode', () => {
             const configWithSharing = { ...mockConfig, address_sharing: true };
             const poolWithSharing = new DefaultPeerPool(configWithSharing, TestHelper.logger);
-            
+
             const address = 'shared-address';
             const peer1 = new MockSignalingPeer('peer1');
             const peer2 = new MockSignalingPeer('peer2');
 
             // Add first peer
             poolWithSharing.onListeningRequest(peer1, address);
-            
+
             // Add second peer - should connect to first
             poolWithSharing.onListeningRequest(peer2, address);
 
@@ -290,7 +288,7 @@ describe('DefaultPeerPool', () => {
         test('should deny connection when multiple peers share address', () => {
             const configWithSharing = { ...mockConfig, address_sharing: true };
             const poolWithSharing = new DefaultPeerPool(configWithSharing, TestHelper.logger);
-            
+
             const address = 'shared-address';
             const connectionId = new ConnectionId(1);
             const listener1 = new MockSignalingPeer('listener1');
@@ -342,7 +340,7 @@ describe('DefaultPeerPool', () => {
         test('should handle removing peer from address with multiple listeners', () => {
             const configWithSharing = { ...mockConfig, address_sharing: true };
             const poolWithSharing = new DefaultPeerPool(configWithSharing, TestHelper.logger);
-            
+
             const address = 'shared-address';
             const peer1 = new MockSignalingPeer('peer1');
             const peer2 = new MockSignalingPeer('peer2');
@@ -363,7 +361,7 @@ describe('DefaultPeerPool', () => {
             const peer2 = new MockSignalingPeer('peer2');
 
             pool.addListener(peer1, address);
-            
+
             // Try to remove peer2 which was never added
             expect(() => pool.removeListener(peer2, address)).not.toThrow();
             expect(pool.getListenerPeers(address)).toContain(peer1);

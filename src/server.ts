@@ -11,7 +11,7 @@ import { TokenManager } from './TokenManager';
 import { ServerConfig, validatePort } from './ServerConfig';
 import { DefaultPeerPool } from './PeerPool';
 
-import { SLogger } from './Logger';  
+import { SLogger } from './Logger';
 
 const logger = new SLogger("sig");
 
@@ -77,7 +77,7 @@ if (tokenManager.isActive()) {
 //request handler that will deliver files from public directory
 //can be used like a simple http / https webserver
 //also needed for let's encrypt to get a free SSL certificate
-const serve = serveStatic("./public", {dotfiles: "allow"});
+const serve = serveStatic("./public", { dotfiles: "allow" });
 
 //setup http/https endpoints
 let httpServer: http.Server = null;

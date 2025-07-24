@@ -19,7 +19,7 @@ export class MockProtocol extends Protocol {
 
     public get Listener(): ProtocolListener {
         return this.mListener;
-    }   
+    }
 
     constructor(identity: string = 'test-peer') {
         super();

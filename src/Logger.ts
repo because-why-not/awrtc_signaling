@@ -8,7 +8,7 @@ export interface ILogger {
     get prefix();
 }
 
-export class SLogger{
+export class SLogger {
     private mPrefix: string;
     public get prefix() {
         return this.mPrefix;
@@ -30,10 +30,10 @@ export class SLogger{
     }
 
     private logPrefix(): string {
-        return "(" + new Date().toISOString() + ")" +  this.mPrefix;
+        return "(" + new Date().toISOString() + ")" + this.mPrefix;
     }
     public logv(txt: string) {
-        if(this.mVerbose)
+        if (this.mVerbose)
             console.info(this.logPrefix() + "| " + txt);
     }
     public log(txt: string) {

@@ -45,8 +45,8 @@ export class WebsocketNetworkServer {
             const ep = new WebsocketEndpoint(socket, request);
 
             if (ep.appPath in this.mPool) {
-                this.mLog.log("New websocket connection from " + ep.getConnectionInfo() + " on " +  ep.getLocalConnectionInfo());
-                
+                this.mLog.log("New websocket connection from " + ep.getConnectionInfo() + " on " + ep.getLocalConnectionInfo());
+
                 const pool = this.mPool[ep.appPath];
                 this.onConnection(ep, pool);
             } else {

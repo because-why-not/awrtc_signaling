@@ -78,7 +78,7 @@ export class TokenManager {
                             res.end(err);
                         }
                     } catch (e) {
-                        let errMsg :string;
+                        let errMsg: string;
                         if (e instanceof Error) {
                             errMsg = 'Error parsing or processing input: ' + e.message;
                         } else {
