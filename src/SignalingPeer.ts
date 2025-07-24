@@ -1,6 +1,5 @@
 import { Protocol } from './Protocol';
 import { IPeerController } from './PeerPool';
-import { WebsocketNetworkServer } from './WebsocketNetworkServer';
 import { ConnectionId, NetEventType, NetworkEvent } from './INetwork';
 import { ILogger } from './Logger';
 
@@ -181,10 +180,9 @@ export class SignalingPeer {
 
         this.mController.onCleanup(this);
 
-        //disconnect all connections        
-        for (const v in this.mConnections) {
-            if (this.mConnections.hasOwnProperty(v))
-                this.disconnect(new ConnectionId(+v));
+        //disconnect all connections
+        for (const [k] of Object.entries(this.mConnections)) {
+            this.disconnect(new ConnectionId(+k));
         }
 
         //make sure the server address is freed 
@@ -315,7 +313,7 @@ export class SignalingPeer {
     }
 
     //delivers the message to the local peer
-    private forwardMessage(senderPeer: SignalingPeer, msg: any, reliable: boolean) {
+    private forwardMessage(senderPeer: SignalingPeer, msg: Uint8Array, reliable: boolean) {
 
         const id = this.findPeerConnectionId(senderPeer);
         if (reliable)
@@ -323,7 +321,7 @@ export class SignalingPeer {
         else
             this.sendToClient(new NetworkEvent(NetEventType.UnreliableMessageReceived, id, msg));
     }
-    private sendData(id: ConnectionId, msg: any, reliable: boolean) {
+    private sendData(id: ConnectionId, msg: Uint8Array, reliable: boolean) {
 
         const peer = this.mConnections[id.id];
         if (peer) {

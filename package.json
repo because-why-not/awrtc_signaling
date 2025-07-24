@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --project tsconfig.vitest.json --noEmit",
+    "typecheck:watch": "tsc --project tsconfig.vitest.json --noEmit --watch",
     "start": "node out/server.js",
     "watch": "tsx watch src/server.ts",
     "lint": "eslint",

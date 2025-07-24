@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeEach, test } from 'vitest';
+import { describe, expect, beforeEach, test } from 'vitest';
 import { DefaultPeerPool } from '../src/PeerPool';
 import { ISignalingPeer, SignalingConnectionState } from '../src/SignalingPeer';
 import { ConnectionId } from '../src/INetwork';

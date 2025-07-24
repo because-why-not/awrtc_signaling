@@ -26,7 +26,7 @@ export class TokenManager {
         return false;
     }
 
-    public isValidUserTokenRequest = (obj: any): obj is UserTokenRequest => {
+    public isValidUserTokenRequest = (obj: UserTokenRequest): obj is UserTokenRequest => {
         return typeof obj === 'object'
             && obj !== null
             && typeof obj.userToken === 'string'
@@ -56,7 +56,7 @@ export class TokenManager {
 
             if (req.headers["authorization"] === this.adminToken) {
                 let body = '';
-                req.on('data', chunk => {
+                req.on('data', (chunk: Buffer) => {
                     body += chunk.toString();
                 });
                 req.on('end', () => {
@@ -78,8 +78,14 @@ export class TokenManager {
                             res.end(err);
                         }
                     } catch (e) {
+                        let errMsg :string;
+                        if (e instanceof Error) {
+                            errMsg = 'Error parsing or processing input: ' + e.message;
+                        } else {
+                            errMsg = 'Non-error thrown: ' + JSON.stringify(e);
+                        }
                         res.statusCode = 500;
-                        const err = 'Error parsing or processing input:' + e.message
+                        const err = 'Error parsing or processing input:' + errMsg
                         console.error(err, e);
                         res.end(err);
                     }
