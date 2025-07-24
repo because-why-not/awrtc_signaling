@@ -12,7 +12,8 @@
     "watch": "tsx watch src/server.ts",
     "lint": "eslint",
     "prepare": "npm run build",
-    "test": "vitest"
+    "test": "vitest",
+    "format": "prettier --write \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\""
   },
   "repository": {
     "type": "git",
