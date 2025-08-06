@@ -1,6 +1,6 @@
 export { ConnectionId, NetEventType, NetworkEvent } from "./INetwork";
 export { PeerPool, DefaultPeerPool } from "./PeerPool";
-export { SignalingPeer } from "./SignalingPeer";
+export { SignalingPeer, ISignalingPeer } from "./SignalingPeer";
 export { Protocol } from "./Protocol";
 export { TokenManager } from "./TokenManager";
 export { ServerConfig, AppConfig } from "./ServerConfig";
