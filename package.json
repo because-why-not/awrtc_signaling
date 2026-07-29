@@ -44,11 +44,11 @@
     "@types/node": "^22.15.32",
     "@types/serve-static": "^1.15.8",
     "@types/ws": "^8.18.1",
-    "eslint": "^9.31.0",
+    "eslint": "^10.8.0",
     "prettier": "^3.6.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.8"
   }
 }
